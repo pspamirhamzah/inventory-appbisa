@@ -1,156 +1,19 @@
+<!-- ================================================================================== -->
+<!-- [FILE] index.html : STRUKTUR HALAMAN                                                -->
+<!-- ================================================================================== -->
 <!DOCTYPE html>
 <html lang="id" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard APP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-</head>
-<body>
-
-    <div id="loader">
-        <div class="spinner"></div>
-        <div style="font-size: 12px; color: var(--text-muted); letter-spacing: 1px;">MEMUAT DATA...</div>
-    </div>
-
-    <div class="overlay" onclick="toggleSidebar()"></div>
-
-    <aside class="sidebar" id="sidebar">
-        <div class="brand">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="brand-title">Dashboard</div>
-                <button class="theme-btn-header" onclick="toggleTheme()"><i class="fas fa-sun" id="theme-icon-sidebar"></i></button>
-            </div>
-            <div class="brand-subtitle">Adm Pemasaran & Penjualan</div>
-        </div>
-
-        <div class="menu-label">Sektor</div>
-        <nav>
-            <div class="nav-item active" id="nav-subsidi" onclick="setSector('SUBSIDI')">
-                <i class="fas fa-industry"></i> <span>Subsidi</span>
-            </div>
-            <div class="nav-item" id="nav-retail" onclick="setSector('RETAIL')">
-                <i class="fas fa-store"></i> <span>Retail</span>
-            </div>
-        </nav>
-
-        <div class="menu-label">Admin</div>
-        <div class="nav-item" onclick="openLoginModal()" id="btn-login-trigger">
-            <i class="fas fa-lock"></i> <span>Login Admin</span>
-        </div>
-        <div class="nav-item" onclick="openAdminPanel()" id="btn-admin-panel" style="display: none;">
-            <i class="fas fa-database"></i> <span>Kelola Data</span>
-        </div>
-    </aside>
     
-    <main class="main-content">
-        <header class="header">
-            <div class="header-left">
-                <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-                <div class="page-info">
-                    <h2 id="page-heading">Subsidi</h2>
-                    <p id="year-label">Data Tahun: 2025</p>
-                </div>
-            </div>
-            <div class="header-right">
-                <div class="select-wrapper">
-                    <div class="select-trigger"><span id="year-text">Auto</span></div>
-                </div>
-            </div>
-        </header>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
-        <div class="container">
-            <div class="kpi-grid">
-                <div class="kpi-card kpi-urea">
-                    <div class="kpi-header">
-                        <span class="kpi-title">UREA</span>
-                        <div class="kpi-icon"><i class="fas fa-cubes"></i></div>
-                    </div>
-                    <div class="kpi-main-val" id="val-urea">0</div>
-                    <div class="kpi-sub-val">
-                        <span>Target: <span id="txt-urea-rkap">0</span></span>
-                        <span class="kpi-badge" id="kpi-urea-pct">0%</span>
-                    </div>
-                    <div class="progress-track"><div class="progress-bar" id="prog-urea" style="width: 0%"></div></div>
-                    <div class="kpi-footer">
-                        <i class="fas fa-info-circle"></i> Sisa: <b id="txt-urea-sisa">0</b>
-                    </div>
-                </div>
-
-                <div class="kpi-card kpi-npk">
-                    <div class="kpi-header">
-                        <span class="kpi-title">NPK</span>
-                        <div class="kpi-icon"><i class="fas fa-leaf"></i></div>
-                    </div>
-                    <div class="kpi-main-val" id="val-npk">0</div>
-                    <div class="kpi-sub-val">
-                        <span>Target: <span id="txt-npk-rkap">0</span></span>
-                        <span class="kpi-badge" id="kpi-npk-pct">0%</span>
-                    </div>
-                    <div class="progress-track"><div class="progress-bar" id="prog-npk" style="width: 0%"></div></div>
-                    <div class="kpi-footer">
-                        <i class="fas fa-info-circle"></i> Sisa: <b id="txt-npk-sisa">0</b>
-                    </div>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-header"><span class="kpi-title">Tren Urea (Bulanan)</span></div>
-                    <div class="sparkline-container"><canvas id="sparkUrea"></canvas></div>
-                </div>
-                 <div class="kpi-card">
-                    <div class="kpi-header"><span class="kpi-title">Tren NPK (Bulanan)</span></div>
-                    <div class="sparkline-container"><canvas id="sparkNpk"></canvas></div>
-                </div>
-            </div>
-
-            <div class="charts-row">
-                
-                <div class="chart-section">
-                    <div class="section-header">
-                        <div class="section-title">Realisasi Nasional</div>
-                        <div class="btn-group">
-                            <button class="btn-toggle active" id="btn-chart-urea" onclick="setChartProduct('UREA')">UREA</button>
-                            <button class="btn-toggle" id="btn-chart-npk" onclick="setChartProduct('NPK')">NPK</button>
-                        </div>
-                    </div>
-                    <div class="chart-wrapper"><canvas id="chartNasional"></canvas></div>
-                </div>
-                
-                <div class="chart-section">
-                     <div class="section-header">
-                        <div class="section-title">Realisasi Provinsi</div>
-                        <div class="select-wrapper">
-                             <select id="prov-select" onchange="renderProvChart()" style="border: 1px solid #333; background: #1a1a1a; color: white; padding: 5px; border-radius: 5px; outline: none; font-size: 11px; cursor: pointer;">
-                                 <option value="">-- Pilih Provinsi --</option>
-                             </select>
-                        </div>
-                    </div>
-                    <div class="chart-wrapper"><canvas id="chartProv"></canvas></div>
-                </div>
-            </div>
-
-            <div class="ranking-grid">
-                <div class="chart-section">
-                    <div class="section-header"><div class="section-title">🏆 Top 5 Provinsi</div></div>
-                    <div id="list-best" class="rank-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
-                </div>
-                <div class="chart-section">
-                    <div class="section-header"><div class="section-title">⚠️ Perlu Perhatian</div></div>
-                    <div id="list-warn" class="rank-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
-                </div>
-            </div>
-            
-            <div class="footer-copyright">
-                <p>Copyright © 2025 <strong>Adm Penjualan PSO & Ritel</strong></p>
-            </div>
-            <div style="height: 20px;"></div> 
-        </div>
-    </main>
-
-    <div class="backdrop" id="modalBackdrop" onclick="closeAllModals()"></div>
-    <script src="js/script.js"></script>
 </body>
 </html>

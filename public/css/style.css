@@ -238,20 +238,20 @@ body { background-color: var(--bg-body); color: var(--text-primary); font-family
 }
 
 /* ========================================= */
-/* MODIFIKASI LOGIN ADMIN (CLEAN & FLAT)     */
+/* MODIFIKASI LOGIN ADMIN (FINAL COMPACT)    */
 /* ========================================= */
 
-/* 1. Kotak Modal yang Bersih (Tanpa Border Kuning/Glow) */
+/* 1. Kotak Modal */
 #loginModal {
-    max-width: 320px !important; /* Sedikit lebih kecil agar pas */
+    max-width: 300px !important; /* Lebar kotak diperkecil */
     width: 90%;
-    border: 1px solid #333; /* Border abu gelap halus */
-    box-shadow: 0 15px 40px rgba(0,0,0,0.6); /* Bayangan hitam standar untuk kedalaman */
-    background: #1e1e1e; /* Kembali ke warna card standar */
-    border-radius: 16px;
+    border: 1px solid #333;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    background: #1e1e1e;
+    border-radius: 12px;
 }
 
-/* 2. Header Rapi */
+/* 2. Header */
 #loginModal .modal-header {
     justify-content: center;
     border-bottom: none;
@@ -259,62 +259,64 @@ body { background-color: var(--bg-body); color: var(--text-primary); font-family
     position: relative;
 }
 #loginModal .modal-title {
-    font-size: 18px;
+    font-size: 16px; /* Ukuran judul pas */
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
     color: var(--text-primary);
 }
 #loginModal .btn-close {
-    position: absolute; right: 15px; top: 15px; opacity: 0.7;
+    position: absolute; right: 12px; top: 12px; opacity: 0.6; font-size: 16px;
 }
 
-/* 3. Input Password di Tengah */
+/* 3. Input Password */
 #loginModal .modal-body {
-    padding: 15px 25px;
+    padding: 10px 25px;
 }
 #adminPass {
     text-align: center;
-    font-size: 16px;
+    font-size: 14px;
     letter-spacing: 3px;
-    background: #121212; /* Input lebih gelap */
+    background: #121212;
     border: 1px solid #333;
-    height: 45px;
+    height: 40px; /* Tinggi input standar */
     color: var(--text-primary);
-    border-radius: 8px;
+    border-radius: 6px;
+    width: 100%;
 }
-/* Saat diklik, hanya ganti warna border, tanpa glow */
 #adminPass:focus {
-    border-color: var(--color-urea); 
-    box-shadow: none; 
+    border-color: var(--color-urea);
+    box-shadow: none;
 }
 
-/* 4. Footer */
+/* 4. Footer & Tombol */
 #loginModal .modal-footer {
-    justify-content: center;
+    justify-content: center; /* Mengatur tombol pas di tengah */
     border-top: none;
-    padding-top: 0;
-    padding-bottom: 25px;
+    padding-top: 5px;
+    padding-bottom: 20px;
 }
 
-/* 5. Tombol Masuk (Kontras Tinggi tapi Flat/Datar) */
+/* 5. TOMBOL MASUK (Kecil & Tengah) */
 .btn-primary {
     background: var(--color-urea) !important;
-    color: #000000 !important; /* Teks HITAM agar kontras */
+    color: #000000 !important; /* Teks Hitam (Kontras) */
     font-weight: 700;
-    font-size: 14px;
+    font-size: 12px; /* Font tombol kecil */
     text-transform: uppercase;
-    padding: 10px 30px;
+    padding: 8px 25px; /* Padding pas, tidak terlalu lebar */
     letter-spacing: 0.5px;
-    border-radius: 8px; /* Sudut melengkung standar, bukan kapsul */
+    border-radius: 6px;
     border: none;
-    box-shadow: none; /* HAPUS GLOW */
+    box-shadow: none;
     transition: all 0.2s ease;
-    width: 100%; /* Tombol selebar kotak */
+    
+    /* KUNCI AGAR KECIL & DI TENGAH: */
+    width: auto !important; /* Jangan biarkan lebar 100% */
+    min-width: 100px; /* Lebar minimal agar rapi */
 }
 
-/* Efek hover simpel */
 .btn-primary:hover {
-    background: #ffe03d !important; /* Sedikit lebih terang saat disorot */
+    background: #ffe03d !important;
     transform: translateY(-1px);
 }

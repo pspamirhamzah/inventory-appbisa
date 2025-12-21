@@ -240,7 +240,7 @@ const app = (() => {
         }
     };
 
-    // --- CHART CONFIG (LEGEND DOT SOLID MANUAL) ---
+    // --- CHART CONFIG (LEGEND DOT MINIMALIS) ---
     const getChartOptions = () => ({
         responsive: true, 
         maintainAspectRatio: false,
@@ -251,29 +251,11 @@ const app = (() => {
                 position: 'top',
                 align: 'end',
                 labels: { 
-                    usePointStyle: true, 
-                    boxWidth: 7, // UKURAN DOT KECIL (7px)
+                    usePointStyle: true, // KUNCI: Gunakan Point, bukan Kotak
+                    boxWidth: 6,         // UKURAN DOT: Kecil (6px)
+                    boxHeight: 6,        // Memastikan bulat sempurna jika rasio font berubah
                     padding: 15,
-                    font: { size: 11 },
-                    // FUNGSI INI MEMAKSA SEMUA ICON MENJADI DOT SOLID
-                    generateLabels: (chart) => {
-                        return chart.data.datasets.map((dataset, i) => {
-                            // Tentukan warna berdasarkan tipe
-                            let color = dataset.borderColor; 
-                            if(dataset.type === 'bar') color = dataset.backgroundColor; 
-                            if(dataset.label === 'Target') color = '#ff5252'; // Merah Solid untuk Target
-
-                            return {
-                                text: dataset.label,
-                                fillStyle: color, // Isi Penuh (Solid)
-                                strokeStyle: 'transparent', // Tidak ada garis pinggir
-                                pointStyle: 'circle', // Bentuk Bulat
-                                lineWidth: 0,
-                                hidden: !chart.isDatasetVisible(i),
-                                datasetIndex: i
-                            };
-                        });
-                    }
+                    font: { size: 11 }
                 } 
             },
             tooltip: { 
@@ -314,36 +296,37 @@ const app = (() => {
                         data: data.real, 
                         type: 'line',
                         borderColor: color, 
-                        backgroundColor: color, 
+                        backgroundColor: color, // Untuk warna Dot Legenda
                         fill: { target: 'origin', above: gradient }, 
                         tension: 0.4, 
                         borderWidth: 3, 
                         pointRadius: 3, 
-                        pointStyle: 'circle',
+                        pointStyle: 'circle', // DOT
                         order: 1
                     },
                     {
                         label: 'Target', 
                         data: data.target, 
                         type: 'line',
-                        borderColor: '#ff5252', // Merah
+                        borderColor: '#ff5252', 
+                        backgroundColor: '#ff5252', // Untuk warna Dot Legenda
                         borderDash: [6, 6],
                         borderWidth: 2, 
                         fill: false, 
                         tension: 0.4, 
-                        // POINT RADIUS 0 AGAR BERSIH DI GRAFIK
-                        pointRadius: 0, 
-                        pointHoverRadius: 0,
+                        pointRadius: 0, // Tidak ada dot di grafik
+                        pointStyle: 'circle', // TAPI ada Dot di Legenda
                         order: 0 
                     },
                     {
                         label: 'Stok', 
                         data: data.stock, 
                         type: 'bar', 
-                        backgroundColor: 'rgba(75, 85, 99, 0.8)', // Abu Gelap
-                        borderColor: 'rgba(75, 85, 99, 0.8)',
+                        backgroundColor: 'rgba(75, 85, 99, 0.8)', 
+                        borderColor: 'rgba(75, 85, 99, 0.8)', // Untuk warna Dot Legenda
                         borderWidth: 0, 
                         barPercentage: 0.5, 
+                        pointStyle: 'circle', // Paksa Bar jadi Dot di Legenda
                         order: 2
                     }
                 ]
@@ -400,7 +383,7 @@ const app = (() => {
                         data: mReal, 
                         type: 'line', 
                         borderColor: colorMain, 
-                        backgroundColor: colorMain, 
+                        backgroundColor: colorMain, // Dot Color
                         fill: { target: 'origin', above: gradient },
                         tension: 0.3, 
                         borderWidth: 2, 
@@ -412,14 +395,13 @@ const app = (() => {
                         label: 'Target', 
                         data: mTarget, 
                         type: 'line', 
-                        borderColor: '#ff5252', // Merah 
-                        backgroundColor: '#ff5252',
+                        borderColor: '#ff5252', 
+                        backgroundColor: '#ff5252', // Dot Color
                         borderDash: [4, 4], 
                         borderWidth: 1, 
-                        // POINT RADIUS 0 AGAR BERSIH DI GRAFIK
                         pointRadius: 0, 
-                        pointHoverRadius: 0,
                         tension: 0.3, 
+                        pointStyle: 'circle', // Dot Legend
                         order: 0
                     },
                     {
@@ -427,9 +409,10 @@ const app = (() => {
                         data: mStock, 
                         type: 'bar', 
                         backgroundColor: 'rgba(75, 85, 99, 0.8)', 
-                        borderColor: 'rgba(75, 85, 99, 0.8)', 
+                        borderColor: 'rgba(75, 85, 99, 0.8)', // Dot Color
                         borderWidth: 0, 
                         barPercentage: 0.5, 
+                        pointStyle: 'circle', // Dot Legend
                         order: 2
                     }
                 ]

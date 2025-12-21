@@ -86,7 +86,40 @@ const app = (() => {
         updateDashboard(); 
     };
 
-    // --- DASHBOARD LOGIC (AUTO TOP 1 PROVINSI) ---
+    // --- POPULATE DROPDOWN (TANPA "PILIH PROVINSI") ---
+    const populateProvDropdown = (provKeys) => {
+        const s = document.getElementById('dropdown-provinsi');
+        const prevVal = s.value; 
+        s.innerHTML = '';
+
+        // JANGAN TAMBAHKAN OPSI DEFAULT INI LAGI
+        // const optDefault = document.createElement('option'); ...
+
+        if(!provKeys || provKeys.length === 0) {
+            let opt = document.createElement('option');
+            opt.innerText = "Tidak ada data";
+            s.appendChild(opt);
+            return;
+        }
+
+        const sortedProvs = provKeys.filter(p => p !== 'LAINNYA').sort();
+        sortedProvs.forEach(prov => {
+            let opt = document.createElement('option');
+            opt.value = prov; opt.innerText = prov;
+            s.appendChild(opt);
+        });
+        
+        // LOGIKA AUTO-SELECT:
+        // 1. Jika ada pilihan user sebelumnya yang masih valid, pertahankan.
+        // 2. Jika tidak, pilih yang paling atas (index 0).
+        if (prevVal && sortedProvs.includes(prevVal)) {
+            s.value = prevVal; 
+        } else if (sortedProvs.length > 0) {
+            s.value = sortedProvs[0]; 
+        }
+    };
+
+    // --- DASHBOARD LOGIC ---
     const updateDashboard = () => {
         const { rawData, selectedYear, sector, activeProduct } = state;
         
@@ -100,6 +133,7 @@ const app = (() => {
         };
 
         let rankStats = {}; 
+        let dropdownProvs = new Set();
 
         rawData.forEach(r => {
             let isSectorMatch = (sector === 'SUBSIDI') ? r.SEKTOR.includes('SUBSIDI') : r.SEKTOR.includes('RETAIL');
@@ -127,9 +161,10 @@ const app = (() => {
             }
             if (r.TAHUN === (selectedYear - 1) && isReal) kpiStats.prev[prodKey].real += r.TONASE;
 
-            // Kumpulkan Data per Provinsi (Hanya Produk Aktif)
+            // Logic Dropdown (Hanya Produk Aktif)
             if (prodKey === activeProduct && r.TAHUN === selectedYear) {
                 if (r.PROVINSI && r.PROVINSI !== 'LAINNYA') {
+                    dropdownProvs.add(r.PROVINSI);
                     if (!rankStats[r.PROVINSI]) rankStats[r.PROVINSI] = { real: 0, target: 0 };
                     if (isReal) rankStats[r.PROVINSI].real += r.TONASE;
                     if (isTarget) rankStats[r.PROVINSI].target += r.TONASE;
@@ -137,22 +172,16 @@ const app = (() => {
             }
         });
 
-        // Cari Provinsi Top 1
-        let bestProv = '';
-        let maxReal = -1;
-        for(const [prov, data] of Object.entries(rankStats)) {
-            if(data.real > maxReal) {
-                maxReal = data.real;
-                bestProv = prov;
-            }
-        }
-
+        // 1. Isi Dropdown dulu (ini akan auto-select item pertama jika kosong)
+        populateProvDropdown([...dropdownProvs]);
+        
+        // 2. Render komponen lain
         renderKPI(kpiStats);
         renderRankings(rankStats);
         renderNasionalChart(kpiStats.nasional);
         
-        // Render Grafik Provinsi Otomatis (Tanpa Dropdown)
-        renderProvChart(bestProv); 
+        // 3. Render Chart Provinsi (mengambil value dari dropdown yang baru diisi)
+        renderProvChart(); 
     };
 
     const renderKPI = (stats) => {
@@ -317,26 +346,26 @@ const app = (() => {
         });
     };
 
-    // --- CHART PROVINSI (TERIMA NAMA PROVINSI LANGSUNG) ---
-    const renderProvChart = (targetProv) => {
+    const renderProvChart = () => {
+        const provName = document.getElementById('dropdown-provinsi').value;
         const placeholder = document.getElementById('prov-placeholder');
         const ctx = document.getElementById('chartProvinsi').getContext('2d');
         const titleEl = document.getElementById('prov-chart-title');
         
-        if (!targetProv) {
+        if (!provName) {
             placeholder.style.display = 'flex';
             if(chartProvinsi) chartProvinsi.clear();
-            titleEl.innerText = "Detail Provinsi (Tidak Ada Data)";
+            titleEl.innerText = "Detail Provinsi"; // Default Title
             return;
         }
         
         placeholder.style.display = 'none';
-        titleEl.innerText = `Detail: ${targetProv} (Tertinggi)`; // Update Judul
+        titleEl.innerText = `Detail: ${provName}`; // Update Judul dengan Nama Provinsi
 
         let mReal = Array(12).fill(0), mTarget = Array(12).fill(0), mStock = Array(12).fill(0);
 
         state.rawData.forEach(r => {
-            if (r.TAHUN !== state.selectedYear || r.PROVINSI !== targetProv) return;
+            if (r.TAHUN !== state.selectedYear || r.PROVINSI !== provName) return;
             let isSectorMatch = (state.sector === 'SUBSIDI') ? r.SEKTOR.includes('SUBSIDI') : r.SEKTOR.includes('RETAIL');
             if (!isSectorMatch) return;
 
@@ -413,7 +442,8 @@ const app = (() => {
             document.getElementById('btn-nas-urea').classList.toggle('active', prod === 'UREA');
             document.getElementById('btn-nas-npk').classList.toggle('active', prod === 'NPK');
             updateDashboard();
-        }
+        },
+        renderProvChart
     };
 })();
 

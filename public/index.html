@@ -27,13 +27,17 @@
             </div>
         </div>
         <div class="nav-header">PSO DAN RETAIL</div>
+        
         <div class="nav-item active" id="nav-subsidi" onclick="app.setSector('SUBSIDI')">
             <i class="fas fa-industry"></i> <span>Subsidi</span>
         </div>
+        
         <div class="nav-item" id="nav-retail" onclick="app.setSector('RETAIL')">
             <i class="fas fa-store"></i> <span>Retail</span>
         </div>
+        
         <div class="nav-spacer"></div>
+        
         <div class="nav-login">
             <div class="nav-item" onclick="alert('Fitur Login Admin')">
                 <i class="fas fa-sign-in-alt"></i> <span>Login Admin</span>
@@ -59,26 +63,61 @@
             
             <div class="kpi-grid">
                 <div class="card">
-                    <div class="kpi-head"><div class="kpi-title">Realisasi Urea</div><div class="kpi-icon icon-urea"><i class="fas fa-cubes"></i></div></div>
+                    <div class="kpi-head">
+                        <div class="kpi-title">Realisasi Urea</div>
+                        <div class="kpi-icon icon-urea"><i class="fas fa-cubes"></i></div>
+                    </div>
                     <div class="kpi-value" id="val-urea-real">0</div>
-                    <div class="kpi-sub"><span>Target: <span id="val-urea-target">0</span></span><span id="val-urea-pct">0%</span></div>
-                    <div class="progress-track"><div class="progress-bar bg-urea" id="prog-urea" style="width: 0%"></div></div>
+                    <div class="kpi-sub">
+                        <span>Target: <span id="val-urea-target">0</span></span>
+                        <span id="val-urea-pct">0%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar bg-urea" id="prog-urea" style="width: 0%"></div>
+                    </div>
                 </div>
+
                 <div class="card">
-                    <div class="kpi-head"><div class="kpi-title">Realisasi NPK</div><div class="kpi-icon icon-npk"><i class="fas fa-leaf"></i></div></div>
+                    <div class="kpi-head">
+                        <div class="kpi-title">Realisasi NPK</div>
+                        <div class="kpi-icon icon-npk"><i class="fas fa-leaf"></i></div>
+                    </div>
                     <div class="kpi-value" id="val-npk-real">0</div>
-                    <div class="kpi-sub"><span>Target: <span id="val-npk-target">0</span></span><span id="val-npk-pct">0%</span></div>
-                    <div class="progress-track"><div class="progress-bar bg-npk" id="prog-npk" style="width: 0%"></div></div>
+                    <div class="kpi-sub">
+                        <span>Target: <span id="val-npk-target">0</span></span>
+                        <span id="val-npk-pct">0%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar bg-npk" id="prog-npk" style="width: 0%"></div>
+                    </div>
                 </div>
+
                 <div class="card">
-                    <div class="kpi-head"><div class="kpi-title">Growth Urea (YoY)</div><div class="kpi-icon"><i class="fas fa-chart-line"></i></div></div>
+                    <div class="kpi-head">
+                        <div class="kpi-title">Growth Urea (YoY)</div>
+                        <div class="kpi-icon"><i class="fas fa-chart-line"></i></div>
+                    </div>
                     <div class="kpi-value" id="growth-urea-val">0%</div>
-                    <div class="kpi-sub"><span style="font-size: 11px; opacity: 0.7;">vs Tahun Lalu</span><div id="growth-urea-badge" class="growth-badge growth-up"><i class="fas fa-arrow-up"></i> 0%</div></div>
+                    <div class="kpi-sub">
+                        <span style="font-size: 11px; opacity: 0.7;">vs Tahun Lalu</span>
+                        <div id="growth-urea-badge" class="growth-badge growth-up">
+                            <i class="fas fa-arrow-up"></i> 0%
+                        </div>
+                    </div>
                 </div>
+
                 <div class="card">
-                    <div class="kpi-head"><div class="kpi-title">Growth NPK (YoY)</div><div class="kpi-icon"><i class="fas fa-chart-line"></i></div></div>
+                    <div class="kpi-head">
+                        <div class="kpi-title">Growth NPK (YoY)</div>
+                        <div class="kpi-icon"><i class="fas fa-chart-line"></i></div>
+                    </div>
                     <div class="kpi-value" id="growth-npk-val">0%</div>
-                    <div class="kpi-sub"><span style="font-size: 11px; opacity: 0.7;">vs Tahun Lalu</span><div id="growth-npk-badge" class="growth-badge growth-down"><i class="fas fa-arrow-down"></i> 0%</div></div>
+                    <div class="kpi-sub">
+                        <span style="font-size: 11px; opacity: 0.7;">vs Tahun Lalu</span>
+                        <div id="growth-npk-badge" class="growth-badge growth-down">
+                            <i class="fas fa-arrow-down"></i> 0%
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -91,18 +130,20 @@
                             <button class="btn-filter" id="btn-nas-npk" onclick="app.setChartProduct('NPK')">NPK</button>
                         </div>
                     </div>
-                    <div class="chart-canvas-container"><canvas id="chartNasional"></canvas></div>
+                    <div class="chart-canvas-container">
+                        <canvas id="chartNasional"></canvas>
+                    </div>
                 </div>
+
                 <div class="card">
                     <div class="chart-header">
-                        <div class="chart-title" id="prov-chart-title">Realisasi Provinsi</div>
-                        <select class="custom-select" id="dropdown-provinsi" onchange="app.renderProvChart()"></select>
-                    </div>
+                        <div class="chart-title" id="prov-chart-title">Detail Provinsi</div>
+                        </div>
                     <div class="chart-canvas-container">
                         <canvas id="chartProvinsi"></canvas>
                         <div id="prov-placeholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); color:var(--text-primary); border-radius:8px; backdrop-filter: blur(2px);">
                             <span style="background:var(--bg-body); padding:8px 16px; border-radius:20px; border:1px solid var(--border-color); font-size:12px;">
-                                <i class="fas fa-arrow-up"></i> Pilih Provinsi
+                                <i class="fas fa-spinner fa-spin"></i> Memuat Data...
                             </span>
                         </div>
                     </div>
@@ -111,11 +152,15 @@
 
             <div class="ranking-grid">
                 <div class="card">
-                    <div class="chart-header"><div class="chart-title">🏆 Top 5 Provinsi</div></div>
+                    <div class="chart-header">
+                        <div class="chart-title">🏆 Top 5 Provinsi</div>
+                    </div>
                     <div id="list-top5" class="rank-list"></div>
                 </div>
                 <div class="card">
-                    <div class="chart-header"><div class="chart-title" style="color: var(--color-danger);">⚠️ Perlu Perhatian (Sisa Provinsi)</div></div>
+                    <div class="chart-header">
+                        <div class="chart-title" style="color: var(--color-danger);">⚠️ Perlu Perhatian (Sisa Provinsi)</div>
+                    </div>
                     <div id="list-others" class="rank-list"></div>
                 </div>
             </div>

@@ -86,27 +86,6 @@ const app = (() => {
         updateDashboard(); 
     };
 
-    const populateProvDropdown = (provKeys) => {
-        const s = document.getElementById('dropdown-provinsi');
-        const prevVal = s.value; 
-        s.innerHTML = '';
-
-        const optDefault = document.createElement('option');
-        optDefault.value = ""; optDefault.innerText = "-- Pilih Provinsi --";
-        s.appendChild(optDefault);
-
-        if(!provKeys || provKeys.length === 0) return;
-
-        const sortedProvs = provKeys.filter(p => p !== 'LAINNYA').sort();
-        sortedProvs.forEach(prov => {
-            let opt = document.createElement('option');
-            opt.value = prov; opt.innerText = prov;
-            s.appendChild(opt);
-        });
-        
-        if (prevVal && sortedProvs.includes(prevVal)) s.value = prevVal; 
-    };
-
     // --- DASHBOARD LOGIC ---
     const updateDashboard = () => {
         const { rawData, selectedYear, sector, activeProduct } = state;
@@ -120,8 +99,8 @@ const app = (() => {
             }
         };
 
+        // Kumpulkan data ranking untuk mencari Top 1 nanti
         let rankStats = {}; 
-        let dropdownProvs = new Set();
 
         rawData.forEach(r => {
             let isSectorMatch = (sector === 'SUBSIDI') ? r.SEKTOR.includes('SUBSIDI') : r.SEKTOR.includes('RETAIL');
@@ -149,9 +128,9 @@ const app = (() => {
             }
             if (r.TAHUN === (selectedYear - 1) && isReal) kpiStats.prev[prodKey].real += r.TONASE;
 
+            // Logic Ranking Data
             if (prodKey === activeProduct && r.TAHUN === selectedYear) {
                 if (r.PROVINSI && r.PROVINSI !== 'LAINNYA') {
-                    dropdownProvs.add(r.PROVINSI);
                     if (!rankStats[r.PROVINSI]) rankStats[r.PROVINSI] = { real: 0, target: 0 };
                     if (isReal) rankStats[r.PROVINSI].real += r.TONASE;
                     if (isTarget) rankStats[r.PROVINSI].target += r.TONASE;
@@ -159,11 +138,12 @@ const app = (() => {
             }
         });
 
-        populateProvDropdown([...dropdownProvs]);
         renderKPI(kpiStats);
         renderRankings(rankStats);
         renderNasionalChart(kpiStats.nasional);
-        renderProvChart(); 
+        
+        // Render Provinsi secara OTOMATIS (Top 1)
+        renderProvChart(rankStats); 
     };
 
     const renderKPI = (stats) => {
@@ -240,7 +220,7 @@ const app = (() => {
         }
     };
 
-    // --- CHART CONFIG (POSISI TENGAH) ---
+    // --- CHART CONFIG (POSISI TENGAH & BENTUK SESUAI PERMINTAAN) ---
     const getChartOptions = () => ({
         responsive: true, 
         maintainAspectRatio: false,
@@ -249,7 +229,7 @@ const app = (() => {
             legend: { 
                 display: true, 
                 position: 'top',
-                align: 'center', // <--- POSISI DI TENGAH (CENTER)
+                align: 'center', 
                 labels: { 
                     usePointStyle: true, 
                     boxWidth: 6,         
@@ -259,8 +239,8 @@ const app = (() => {
                         return chart.data.datasets.map((dataset, i) => {
                             let color = dataset.type === 'line' ? dataset.borderColor : dataset.backgroundColor;
                             
-                            // SEMUA IKON LEGENDA BERBENTUK KOTAK
-                            let shape = 'rect'; 
+                            // LOGIKA BENTUK: STOK = RECT, SISANYA = CIRCLE
+                            let shape = dataset.label === 'Stok' ? 'rect' : 'circle'; 
 
                             return {
                                 text: dataset.label,
@@ -310,41 +290,20 @@ const app = (() => {
                 labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
                 datasets: [
                     {
-                        label: 'Realisasi', 
-                        data: data.real, 
-                        type: 'line',
-                        borderColor: color, 
-                        backgroundColor: gradient,
+                        label: 'Realisasi', data: data.real, type: 'line',
+                        borderColor: color, backgroundColor: gradient,
                         fill: { target: 'origin', above: gradient }, 
-                        tension: 0.4, 
-                        borderWidth: 3, 
-                        pointRadius: 3, 
-                        pointStyle: 'circle',
-                        order: 1
+                        tension: 0.4, borderWidth: 3, pointRadius: 3, pointStyle: 'circle', order: 1
                     },
                     {
-                        label: 'Target', 
-                        data: data.target, 
-                        type: 'line',
-                        borderColor: '#ff5252', 
-                        borderDash: [6, 6],
-                        borderWidth: 2, 
-                        fill: false, 
-                        tension: 0.4, 
-                        pointRadius: 0, 
-                        pointStyle: 'circle', 
-                        order: 0 
+                        label: 'Target', data: data.target, type: 'line',
+                        borderColor: '#ff5252', borderDash: [6, 6],
+                        borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0, pointStyle: 'circle', order: 0 
                     },
                     {
-                        label: 'Stok', 
-                        data: data.stock, 
-                        type: 'bar', 
-                        backgroundColor: 'rgba(75, 85, 99, 0.8)', 
-                        borderColor: 'rgba(75, 85, 99, 0.8)',
-                        borderWidth: 0, 
-                        barPercentage: 0.5, 
-                        pointStyle: 'rect', 
-                        order: 2
+                        label: 'Stok', data: data.stock, type: 'bar', 
+                        backgroundColor: 'rgba(75, 85, 99, 0.8)', borderColor: 'rgba(75, 85, 99, 0.8)',
+                        borderWidth: 0, barPercentage: 0.5, pointStyle: 'rect', order: 2
                     }
                 ]
             },
@@ -352,22 +311,40 @@ const app = (() => {
         });
     };
 
-    const renderProvChart = () => {
-        const provName = document.getElementById('dropdown-provinsi').value;
+    // --- CHART PROVINSI (OTOMATIS PILIH TOP 1) ---
+    const renderProvChart = (rankStats) => {
         const placeholder = document.getElementById('prov-placeholder');
         const ctx = document.getElementById('chartProvinsi').getContext('2d');
-        
-        if (!provName) {
+        const titleEl = document.getElementById('prov-chart-title');
+
+        // 1. Cari Provinsi Ranking 1 (Terbaik Realisasi)
+        let bestProv = '';
+        let maxReal = -1;
+
+        if (rankStats) {
+            for (const [prov, data] of Object.entries(rankStats)) {
+                if (data.real > maxReal) {
+                    maxReal = data.real;
+                    bestProv = prov;
+                }
+            }
+        }
+
+        if (!bestProv) {
             placeholder.style.display = 'flex';
             if(chartProvinsi) chartProvinsi.clear();
+            titleEl.innerText = "Data Provinsi Tidak Tersedia";
             return;
         }
+        
         placeholder.style.display = 'none';
+        titleEl.innerText = `Detail: ${bestProv} (Tertinggi)`;
 
+        // 2. Siapkan Data Bulanan untuk Provinsi Terpilih
         let mReal = Array(12).fill(0), mTarget = Array(12).fill(0), mStock = Array(12).fill(0);
 
         state.rawData.forEach(r => {
-            if (r.TAHUN !== state.selectedYear || r.PROVINSI !== provName) return;
+            if (r.TAHUN !== state.selectedYear || r.PROVINSI !== bestProv) return;
             let isSectorMatch = (state.sector === 'SUBSIDI') ? r.SEKTOR.includes('SUBSIDI') : r.SEKTOR.includes('RETAIL');
             if (!isSectorMatch) return;
 
@@ -396,41 +373,20 @@ const app = (() => {
                 labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
                 datasets: [
                     {
-                        label: 'Realisasi', 
-                        data: mReal, 
-                        type: 'line', 
-                        borderColor: colorMain, 
-                        backgroundColor: gradient,
+                        label: 'Realisasi', data: mReal, type: 'line', 
+                        borderColor: colorMain, backgroundColor: gradient,
                         fill: { target: 'origin', above: gradient },
-                        tension: 0.3, 
-                        borderWidth: 2, 
-                        pointRadius: 4, 
-                        pointStyle: 'circle',
-                        order: 1
+                        tension: 0.3, borderWidth: 2, pointRadius: 4, pointStyle: 'circle', order: 1
                     },
                     {
-                        label: 'Target', 
-                        data: mTarget, 
-                        type: 'line', 
-                        borderColor: '#ff5252', 
-                        backgroundColor: '#ff5252', 
-                        borderDash: [4, 4], 
-                        borderWidth: 1, 
-                        pointRadius: 0, 
-                        tension: 0.3, 
-                        pointStyle: 'circle', 
-                        order: 0
+                        label: 'Target', data: mTarget, type: 'line', 
+                        borderColor: '#ff5252', borderDash: [4, 4], 
+                        borderWidth: 1, pointRadius: 0, tension: 0.3, pointStyle: 'circle', order: 0
                     },
                     {
-                        label: 'Stok', 
-                        data: mStock, 
-                        type: 'bar', 
-                        backgroundColor: 'rgba(75, 85, 99, 0.8)', 
-                        borderColor: 'rgba(75, 85, 99, 0.8)', 
-                        borderWidth: 0, 
-                        barPercentage: 0.5, 
-                        pointStyle: 'rect', 
-                        order: 2
+                        label: 'Stok', data: mStock, type: 'bar', 
+                        backgroundColor: 'rgba(75, 85, 99, 0.8)', borderColor: 'rgba(75, 85, 99, 0.8)', 
+                        borderWidth: 0, barPercentage: 0.5, pointStyle: 'rect', order: 2
                     }
                 ]
             },
@@ -465,8 +421,7 @@ const app = (() => {
             document.getElementById('btn-nas-urea').classList.toggle('active', prod === 'UREA');
             document.getElementById('btn-nas-npk').classList.toggle('active', prod === 'NPK');
             updateDashboard();
-        },
-        renderProvChart
+        }
     };
 })();
 

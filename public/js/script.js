@@ -2,7 +2,7 @@
    APP SCRIPT CONFIGURATION
    ========================================================= */
 // ⚠️ PENTING: PASTE URL /exec ANDA DISINI
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/...................../exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvQc8_pnXd6PrcU9bQZ28Trh0Ad0P5OHrCKs9203wwY-Sk7u9KvCeKKHpucoQmAyBunA/exec';
 
 const ADMIN_PASSWORD = 'pso123';
 

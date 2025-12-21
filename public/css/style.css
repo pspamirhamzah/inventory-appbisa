@@ -24,7 +24,7 @@ body {
     overflow: hidden;
 }
 
-/* SIDEBAR */
+/* --- SIDEBAR --- */
 .sidebar {
     width: var(--sidebar-w);
     background: var(--bg-sidebar);
@@ -44,7 +44,7 @@ body {
 .nav-item.active i { color: var(--urea); }
 .nav-spacer { flex: 1; }
 
-/* MAIN CONTENT */
+/* --- MAIN CONTENT --- */
 .main-content { flex: 1; margin-left: var(--sidebar-w); display: flex; flex-direction: column; transition: 0.3s ease; }
 .main-content.closed { margin-left: 0; }
 header { height: 64px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
@@ -62,14 +62,14 @@ header { height: 64px; padding: 0 30px; display: flex; align-items: center; just
     -webkit-overflow-scrolling: touch; 
 }
 
-/* GRIDS */
+/* --- GRIDS --- */
 .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px; flex-shrink: 0; }
 .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; flex-shrink: 0; }
 .ranking-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; flex-shrink: 0; }
 
 .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; min-width: 0; }
 
-/* KPI CARDS */
+/* --- ELEMENTS --- */
 .kpi-head { display: flex; justify-content: space-between; margin-bottom: 10px; }
 .kpi-title { font-size: 11px; font-weight: 600; color: var(--text-s); text-transform: uppercase; }
 .kpi-value { font-size: 22px; font-weight: 700; margin-bottom: 5px; }
@@ -80,13 +80,12 @@ header { height: 64px; padding: 0 30px; display: flex; align-items: center; just
 .bg-npk { background: var(--npk); }
 .growth-badge { font-weight: 700; font-size: 11px; }
 
-/* CHART AREA */
 .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .chart-title { font-size: 14px; font-weight: 700; }
 .chart-container { position: relative; height: 260px; }
 .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 12px; }
 
-/* RANKING (KUNCI HORIZONTAL) */
+/* --- RANKING (KUNCI HORIZONTAL) --- */
 .rank-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 14px; font-weight: 700; }
 .rank-header .up { color: var(--npk); }
 .rank-header .down { color: var(--danger); }
@@ -105,10 +104,10 @@ header { height: 64px; padding: 0 30px; display: flex; align-items: center; just
 .rank-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rank-val { font-size: 13px; font-weight: 700; margin-left: 10px; flex-shrink: 0; }
 
-/* FOOTER (PAS & RAPI) */
+/* --- FOOTER --- */
 .footer { 
     margin-top: 50px; 
-    padding: 30px 0 20px; 
+    padding: 20px 0 10px; 
     text-align: center; 
     border-top: 1px solid var(--border); 
     flex-shrink: 0;
@@ -116,7 +115,7 @@ header { height: 64px; padding: 0 30px; display: flex; align-items: center; just
 .footer p { font-size: 11px; color: var(--text-m); font-weight: 600; }
 .footer .designer { font-size: 10px; opacity: 0.5; margin-top: 4px; }
 
-/* UTILS */
+/* --- UTILS --- */
 .custom-select { background: var(--bg-body); border: 1px solid var(--border); color: var(--text-s); padding: 5px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; }
 .btn-group { background: var(--bg-body); padding: 3px; border-radius: 8px; display: flex; gap: 2px; }
 .btn-filter { background: none; border: none; color: var(--text-s); padding: 5px 12px; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 600; }
@@ -126,7 +125,7 @@ header { height: 64px; padding: 0 30px; display: flex; align-items: center; just
 .spinner { width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--urea); border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
-/* RESPONSIVE */
+/* --- RESPONSIVE --- */
 @media (max-width: 1024px) {
     .kpi-grid { grid-template-columns: 1fr 1fr; }
     .chart-grid, .ranking-grid { grid-template-columns: 1fr; }

@@ -33,9 +33,15 @@
 
     <aside class="sidebar" id="sidebar">
         <div class="brand">
-            <div class="brand-title">Dashboard</div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="brand-title">Dashboard</div>
+                <button class="theme-btn-header" onclick="toggleTheme()" title="Ganti Tema">
+                    <i class="fas fa-sun" id="theme-icon-sidebar"></i>
+                </button>
+            </div>
             <div class="brand-subtitle">Adm Pemasaran & Penjualan</div>
         </div>
+
         <div class="menu-label">Sektor Penjualan</div>
         <nav>
             <div class="nav-item active" id="nav-subsidi" onclick="setSector('SUBSIDI')">
@@ -45,10 +51,7 @@
                 <i class="fas fa-store"></i> <span>Retail</span>
             </div>
         </nav>
-        <div class="menu-label">Pengaturan</div>
-        <div class="nav-item" onclick="toggleTheme()">
-            <i class="fas fa-moon" id="theme-icon-nav"></i> <span id="theme-text">Mode Gelap</span>
-        </div>
+
         <div class="menu-label">Admin</div>
         <div class="nav-item" onclick="openLoginModal()" id="btn-login-trigger">
             <i class="fas fa-lock"></i> <span>Login Admin</span>
@@ -57,7 +60,7 @@
             <i class="fas fa-database"></i> <span>Kelola Data</span>
         </div>
     </aside>
-
+    
     <main class="main-content">
         <header class="header">
             <div class="header-left">

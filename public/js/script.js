@@ -4,7 +4,7 @@ Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
 Chart.defaults.font.size = 11;
 
 const app = (() => {
-    // ⚠️ PASTIKAN URL INI BENAR ⚠️
+    // ⚠️ PASTIKAN URL WEB APP ANDA BENAR DI SINI ⚠️
     const API_URL = 'https://script.google.com/macros/s/AKfycbzFanoakpPL3NaMh8CqbolDF5wo9iVb6ikIKQavQh15aGJYBCj7rGQdWyE3sMC911wxdA/exec';
     
     let state = {
@@ -260,7 +260,7 @@ const app = (() => {
         }
     };
 
-    // --- CHART NASIONAL ---
+    // --- CHART NASIONAL (TARGET MERAH) ---
     const renderNasionalChart = (nasStats) => {
         const ctx = document.getElementById('chartNasional').getContext('2d');
         if(chartNasional) chartNasional.destroy();
@@ -273,7 +273,8 @@ const app = (() => {
         gradient.addColorStop(0, hexToRgbA(color, 0.4));
         gradient.addColorStop(1, hexToRgbA(color, 0.0));
 
-        const targetIcon = createDashedCircle('#999'); 
+        // WARNA TARGET MERAH (#ff5252)
+        const targetIcon = createDashedCircle('#ff5252'); 
 
         chartNasional = new Chart(ctx, {
             type: 'bar',
@@ -287,15 +288,14 @@ const app = (() => {
                     },
                     {
                         label: 'Target', data: data.target, type: 'line',
-                        borderColor: '#666', borderDash: [6, 6],
+                        // GARIS TARGET MERAH
+                        borderColor: '#ff5252', borderDash: [6, 6],
                         borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0, pointStyle: targetIcon, order: 0 
                     },
                     {
                         label: 'Stok', data: data.stock, type: 'bar', 
-                        // WARNA ABU-ABU GELAP (Sesuai Request)
-                        backgroundColor: 'rgba(75, 85, 99, 0.8)', // Dark Gray
-                        borderColor: '#374151',                   // Darker Border
-                        borderWidth: 1, 
+                        backgroundColor: 'rgba(75, 85, 99, 0.8)', 
+                        borderColor: '#374151', borderWidth: 1, 
                         barPercentage: 0.5, order: 2
                     }
                 ]
@@ -309,7 +309,7 @@ const app = (() => {
         });
     };
 
-    // --- CHART PROVINSI (DENGAN STOK) ---
+    // --- CHART PROVINSI (TARGET MERAH) ---
     const renderProvChart = () => {
         const provName = document.getElementById('dropdown-provinsi').value;
         const placeholder = document.getElementById('prov-placeholder');
@@ -338,7 +338,6 @@ const app = (() => {
             if (r.BULAN >= 0) {
                 if (r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN')) mReal[r.BULAN] += r.TONASE;
                 else if (r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET') || r.JENIS.includes('RKO')) mTarget[r.BULAN] += r.TONASE;
-                // MENAMBAHKAN LOGIKA LENGKAP UNTUK STOK PROVINSI
                 else if (r.JENIS.includes('STOK') || r.JENIS.includes('STOCK') || r.JENIS.includes('PERSEDIAAN') || r.JENIS.includes('AKTUAL')) mStock[r.BULAN] += r.TONASE;
             }
         });
@@ -348,10 +347,12 @@ const app = (() => {
         const gradient = ctx.createLinearGradient(0, 0, 0, 300);
         gradient.addColorStop(0, hexToRgbA(colorMain, 0.4));
         gradient.addColorStop(1, hexToRgbA(colorMain, 0.0));
-        const targetIcon = createDashedCircle('#999');
+        
+        // WARNA TARGET MERAH (#ff5252)
+        const targetIcon = createDashedCircle('#ff5252');
 
         chartProvinsi = new Chart(ctx, {
-            type: 'bar', // Tipe Utama BAR
+            type: 'bar',
             data: {
                 labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
                 datasets: [
@@ -362,16 +363,14 @@ const app = (() => {
                     },
                     {
                         label: 'Target', data: mTarget, type: 'line', 
-                        borderColor: '#999', borderDash: [4, 4], 
+                        // GARIS TARGET MERAH
+                        borderColor: '#ff5252', borderDash: [4, 4], 
                         borderWidth: 1, pointRadius: 0, tension: 0.3, pointStyle: targetIcon, order: 0
                     },
                     {
                         label: 'Stok', data: mStock, type: 'bar', 
-                        // WARNA ABU-ABU GELAP (Sesuai Request)
-                        backgroundColor: 'rgba(75, 85, 99, 0.8)', // Dark Gray
-                        borderColor: '#374151', 
-                        borderWidth: 1, 
-                        barPercentage: 0.5, order: 2
+                        backgroundColor: 'rgba(75, 85, 99, 0.8)', borderColor: '#374151', 
+                        borderWidth: 1, barPercentage: 0.5, order: 2
                     }
                 ]
             },

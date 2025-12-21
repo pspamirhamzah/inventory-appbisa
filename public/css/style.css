@@ -69,7 +69,7 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
 
 /* ========================================= */
-/* 3. SIDEBAR (COMPACT)                      */
+/* 3. SIDEBAR (CLEAN & COMPACT)              */
 /* ========================================= */
 .sidebar {
     position: fixed; left: 0; top: 0; bottom: 0;
@@ -77,37 +77,54 @@ body {
     background-color: var(--bg-sidebar);
     border-right: 1px solid var(--border-color);
     display: flex; flex-direction: column;
-    padding: 20px 16px; 
+    padding: 24px 16px; /* Padding atas sedikit ditambah */
     z-index: 50; transform: translateX(-100%); transition: transform 0.3s;
 }
 .sidebar.show { transform: translateX(0); }
 
-.brand { padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); }
+.brand { padding-bottom: 20px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); }
 .brand-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
 .brand-subtitle { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
 
+/* IKON TEMA: Tanpa Border & Posisi Tengah */
 .theme-btn-header {
-    background: transparent; border: 1px solid var(--border-color);
+    background: transparent; 
+    border: none; /* HAPUS BORDER */
     color: var(--text-secondary); cursor: pointer;
-    width: 32px; height: 32px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; /* Sedikit diperbesar agar area sentuh nyaman */
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; /* Otomatis tengah */
 }
 .theme-btn-header:hover { background-color: var(--bg-hover); color: var(--color-urea); }
-.theme-btn-header i { font-size: 16px; }
+.theme-btn-header i { font-size: 18px; }
 
-.menu-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); margin: 16px 10px 8px; text-transform: uppercase; }
+.menu-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); margin: 16px 10px 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+
 .nav-item {
-    display: flex; align-items: center; gap: 12px; padding: 8px 12px; margin-bottom: 4px; 
+    display: flex; align-items: center; gap: 12px; padding: 10px 12px; margin-bottom: 4px; 
     border-radius: 8px; font-size: 14px; color: var(--text-secondary); cursor: pointer;
 }
 .nav-item:hover, .nav-item.active { background-color: var(--bg-hover); color: var(--text-primary); }
 .nav-item.active { font-weight: 600; }
-.nav-item i { width: 20px; text-align: center; }
+.nav-item i { width: 20px; text-align: center; font-size: 15px; }
 .nav-item.active i { color: var(--color-urea); }
 [data-theme="light"] .nav-item.active i { color: #0969da; }
 [data-theme="light"] .nav-item.active { color: #0969da; }
 
-.sidebar .menu-label:nth-of-type(3) { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); }
+/* ADMIN SECTION CLEANUP */
+/* Sembunyikan Judul "Admin" dan Garisnya */
+#admin-label-hidden {
+    display: none !important;
+}
+
+/* Dorong Tombol Login ke Paling Bawah */
+#btn-login-trigger {
+    margin-top: auto; /* Kunci agar di bawah */
+    margin-bottom: 20px; /* Beri jarak dari tepi bawah layar */
+    background-color: var(--bg-hover); /* Opsional: beri background tipis agar lebih menonjol sebagai tombol keluar */
+    color: var(--text-primary);
+    font-weight: 600;
+}
 
 /* ========================================= */
 /* 4. LAYOUT UTAMA                           */
@@ -141,8 +158,6 @@ body {
     padding: var(--gap-std); 
     max-width: 1600px; 
     margin: 0 auto;
-    
-    /* FIX FOOTER: Dikurangi jadi 40px agar seimbang (tidak terlalu kopong) */
     padding-bottom: 40px; 
 }
 
@@ -309,8 +324,6 @@ body {
 
 @media (max-width: 768px) {
     .header { padding: 0 20px; }
-    
-    /* FIX FOOTER MOBILE: 80px cukup untuk address bar, tidak terlalu kopong */
     .container { padding: 16px; padding-bottom: 80px; }
     
     .kpi-grid, .charts-row { gap: 16px; margin-bottom: 16px; }

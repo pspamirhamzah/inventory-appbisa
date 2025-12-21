@@ -153,7 +153,6 @@ const app = (() => {
                 if (r.PROVINSI && r.PROVINSI !== 'LAINNYA') {
                     dropdownProvs.add(r.PROVINSI);
                     if (!rankStats[r.PROVINSI]) rankStats[r.PROVINSI] = { real: 0, target: 0 };
-                    
                     if (isReal) rankStats[r.PROVINSI].real += r.TONASE;
                     if (isTarget) rankStats[r.PROVINSI].target += r.TONASE;
                 }
@@ -209,12 +208,7 @@ const app = (() => {
                 displayVal = formatNumber(item.real);
             }
 
-            return { 
-                name: key, 
-                val: sortVal,
-                display: displayVal,
-                rawReal: item.real 
-            };
+            return { name: key, val: sortVal, display: displayVal, rawReal: item.real };
         });
 
         let activeData = arr.filter(item => item.rawReal > 0);
@@ -224,10 +218,7 @@ const app = (() => {
         if (activeData.length > 0) {
             listTop5.innerHTML = activeData.slice(0, 5).map((item, i) => `
                 <div class="rank-item">
-                    <div class="rank-left">
-                        <div class="rank-num best">${i+1}</div>
-                        <div class="rank-name">${item.name}</div>
-                    </div>
+                    <div class="rank-left"><div class="rank-num best">${i+1}</div><div class="rank-name">${item.name}</div></div>
                     <div class="rank-val val-best">${item.display}</div>
                 </div>
             `).join('');
@@ -240,10 +231,7 @@ const app = (() => {
             const bottom5 = activeData.slice(5).reverse().slice(0, 5); 
             listOthers.innerHTML = bottom5.map((item, i) => `
                 <div class="rank-item">
-                    <div class="rank-left">
-                        <div class="rank-num warn"><i class="fas fa-exclamation"></i></div>
-                        <div class="rank-name">${item.name}</div>
-                    </div>
+                    <div class="rank-left"><div class="rank-num warn"><i class="fas fa-exclamation"></i></div><div class="rank-name">${item.name}</div></div>
                     <div class="rank-val val-warn">${item.display}</div>
                 </div>
             `).join('');
@@ -252,8 +240,7 @@ const app = (() => {
         }
     };
 
-    // --- CHART CONFIG (MODIFIED LEGEND) ---
-    // Fungsi umum untuk opsi chart agar konsisten
+    // --- CHART CONFIG (LEGEND DOT MINIMALIS) ---
     const getChartOptions = () => ({
         responsive: true, 
         maintainAspectRatio: false,
@@ -264,12 +251,22 @@ const app = (() => {
                 position: 'top',
                 align: 'end',
                 labels: { 
-                    usePointStyle: true, // GUNAKAN DOT/CIRCLE
-                    boxWidth: 8,         // UKURAN KECIL SESUAI TEKS
+                    usePointStyle: true, // KUNCI: Gunakan Point, bukan Kotak
+                    boxWidth: 6,         // UKURAN DOT: Kecil (6px)
+                    boxHeight: 6,        // Memastikan bulat sempurna jika rasio font berubah
                     padding: 15,
                     font: { size: 11 }
                 } 
-            } 
+            },
+            tooltip: { 
+                backgroundColor: 'rgba(33, 33, 33, 0.95)',
+                titleColor: '#ececec', bodyColor: '#b3b3b3',
+                borderColor: '#424242', borderWidth: 1,
+                displayColors: false, 
+                callbacks: {
+                    label: function(context) { return context.dataset.label + ': ' + formatNumber(context.raw); }
+                }
+            }
         },
         scales: { 
             x: { grid: { display: false } }, 
@@ -299,36 +296,37 @@ const app = (() => {
                         data: data.real, 
                         type: 'line',
                         borderColor: color, 
-                        backgroundColor: gradient,
-                        fill: true, 
+                        backgroundColor: color, // Untuk warna Dot Legenda
+                        fill: { target: 'origin', above: gradient }, 
                         tension: 0.4, 
                         borderWidth: 3, 
                         pointRadius: 3, 
-                        pointStyle: 'circle', // Pastikan DOT
+                        pointStyle: 'circle', // DOT
                         order: 1
                     },
                     {
                         label: 'Target', 
                         data: data.target, 
                         type: 'line',
-                        borderColor: '#ff5252', // Merah
+                        borderColor: '#ff5252', 
+                        backgroundColor: '#ff5252', // Untuk warna Dot Legenda
                         borderDash: [6, 6],
                         borderWidth: 2, 
                         fill: false, 
                         tension: 0.4, 
-                        pointRadius: 0, 
-                        pointStyle: 'circle', // Pastikan DOT di Legenda
+                        pointRadius: 0, // Tidak ada dot di grafik
+                        pointStyle: 'circle', // TAPI ada Dot di Legenda
                         order: 0 
                     },
                     {
                         label: 'Stok', 
                         data: data.stock, 
                         type: 'bar', 
-                        backgroundColor: 'rgba(75, 85, 99, 0.8)', // Abu Gelap Kalem
-                        borderColor: '#374151',
-                        borderWidth: 1, 
+                        backgroundColor: 'rgba(75, 85, 99, 0.8)', 
+                        borderColor: 'rgba(75, 85, 99, 0.8)', // Untuk warna Dot Legenda
+                        borderWidth: 0, 
                         barPercentage: 0.5, 
-                        pointStyle: 'circle', // Pastikan DOT di Legenda (Override default box)
+                        pointStyle: 'circle', // Paksa Bar jadi Dot di Legenda
                         order: 2
                     }
                 ]
@@ -365,7 +363,7 @@ const app = (() => {
             if (r.BULAN >= 0) {
                 if (r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN')) mReal[r.BULAN] += r.TONASE;
                 else if (r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET') || r.JENIS.includes('RKO')) mTarget[r.BULAN] += r.TONASE;
-                else if (r.JENIS.includes('STOK') || r.JENIS.includes('STOCK')) mStock[r.BULAN] += r.TONASE;
+                else if (r.JENIS.includes('STOK') || r.JENIS.includes('STOCK') || r.JENIS.includes('PERSEDIAAN') || r.JENIS.includes('AKTUAL')) mStock[r.BULAN] += r.TONASE;
             }
         });
 
@@ -385,8 +383,8 @@ const app = (() => {
                         data: mReal, 
                         type: 'line', 
                         borderColor: colorMain, 
-                        backgroundColor: gradient,
-                        fill: true, 
+                        backgroundColor: colorMain, // Dot Color
+                        fill: { target: 'origin', above: gradient },
                         tension: 0.3, 
                         borderWidth: 2, 
                         pointRadius: 4, 
@@ -397,23 +395,24 @@ const app = (() => {
                         label: 'Target', 
                         data: mTarget, 
                         type: 'line', 
-                        borderColor: '#ff5252', // Merah 
+                        borderColor: '#ff5252', 
+                        backgroundColor: '#ff5252', // Dot Color
                         borderDash: [4, 4], 
                         borderWidth: 1, 
                         pointRadius: 0, 
                         tension: 0.3, 
-                        pointStyle: 'circle',
+                        pointStyle: 'circle', // Dot Legend
                         order: 0
                     },
                     {
                         label: 'Stok', 
                         data: mStock, 
                         type: 'bar', 
-                        backgroundColor: 'rgba(75, 85, 99, 0.8)', // Abu Gelap Kalem
-                        borderColor: '#374151', 
-                        borderWidth: 1, 
+                        backgroundColor: 'rgba(75, 85, 99, 0.8)', 
+                        borderColor: 'rgba(75, 85, 99, 0.8)', // Dot Color
+                        borderWidth: 0, 
                         barPercentage: 0.5, 
-                        pointStyle: 'circle',
+                        pointStyle: 'circle', // Dot Legend
                         order: 2
                     }
                 ]

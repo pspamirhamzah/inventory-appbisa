@@ -1,7 +1,7 @@
 /* =========================================================
    APP SCRIPT CONFIGURATION
    ========================================================= */
-// ⚠️ PASTE URL /exec ANDA DISINI (JANGAN SALAH)
+// ⚠️ PASTE URL /exec ANDA DISINI
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvQc8_pnXd6PrcU9bQZ28Trh0Ad0P5OHrCKs9203wwY-Sk7u9KvCeKKHpucoQmAyBunA/exec';
 
 const ADMIN_PASSWORD = 'pso123';
@@ -28,21 +28,15 @@ function fetchData() {
     fetch(GOOGLE_SCRIPT_URL)
         .then(response => response.json())
         .then(data => {
-            // DIAGNOSA DATA
             console.log("Data Diterima:", data); 
 
             if (Array.isArray(data) && data.length > 0) {
                 rawData = data;
-                
-                // Cek isi data baris pertama untuk memastikan kolom terbaca
-                const firstRow = data[0];
-                console.log("Contoh Baris Pertama:", firstRow);
-                
                 updateDashboard(); 
                 if(loader) loader.style.display = 'none';
             } else {
                 if(loader) loader.style.display = 'none';
-                alert("Data berhasil terhubung, tapi isinya KOSONG []. Cek Google Sheet Anda.");
+                console.warn("Data kosong");
             }
         })
         .catch(error => {
@@ -52,7 +46,7 @@ function fetchData() {
 }
 
 /* =========================================================
-   2. SMART CALCULATION (AUTO DETECT COLUMN NAME)
+   2. SMART CALCULATION
    ========================================================= */
 function setSector(sector) {
     currentSector = sector;
@@ -65,13 +59,11 @@ function setSector(sector) {
     
     updateDashboard();
     
-    // Mobile Sidebar
     if(window.innerWidth <= 768) toggleSidebar();
 }
 
-// FUNGSI PINTAR: Mencari nilai kolom tanpa peduli Huruf Besar/Kecil
+// Fungsi Mencari Kolom (Huruf Besar/Kecil)
 function getSmartValue(row, columnName) {
-    // Cari kunci yang cocok (misal: 'Tonase' cocok dengan 'TONASE')
     const key = Object.keys(row).find(k => k.toUpperCase() === columnName.toUpperCase());
     return key ? row[key] : null;
 }
@@ -83,24 +75,27 @@ function updateDashboard() {
     let totalNPK = 0;
 
     rawData.forEach(row => {
-        // GUNAKAN FUNGSI PINTAR UNTUK AMBIL DATA
+        // 1. AMBIL DATA
         const valSektor = getSmartValue(row, 'SEKTOR');
         const valProduk = getSmartValue(row, 'PRODUK');
         const valTonase = getSmartValue(row, 'TONASE');
 
-        // Bersihkan Data
+        // 2. NORMALISASI TEKS
         const sektor = valSektor ? valSektor.toString().toUpperCase().trim() : '';
         const produk = valProduk ? valProduk.toString().toUpperCase().trim() : '';
         
-        // Bersihkan Angka (Handle string "1.000" atau number 1000)
+        // 3. NORMALISASI ANGKA (PERBAIKAN DISINI)
         let tonase = 0;
-        if (typeof valTonase === 'string') {
+        
+        if (typeof valTonase === 'number') {
+            // Jika data dari Google Sheet sudah angka, langsung pakai!
+            tonase = valTonase;
+        } else if (typeof valTonase === 'string') {
+            // Jika data berupa teks "1.250", bersihkan dulu
             tonase = parseFloat(valTonase.replace(/\./g, '').replace(/,/g, '.')) || 0;
-        } else {
-            tonase = parseFloat(valTonase) || 0;
         }
 
-        // Logika Penjumlahan
+        // 4. LOGIKA PENJUMLAHAN
         if (sektor === currentSector) {
             if (produk.includes('UREA') || produk.includes('NITREA')) {
                 totalUrea += tonase;
@@ -111,7 +106,7 @@ function updateDashboard() {
         }
     });
 
-    // Update UI
+    // 5. UPDATE UI
     const pageTitle = document.querySelector('.page-info h2');
     if(pageTitle) pageTitle.innerText = currentSector === 'SUBSIDI' ? 'Subsidi' : 'Retail';
 

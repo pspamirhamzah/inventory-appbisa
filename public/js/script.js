@@ -1,399 +1,369 @@
-Chart.defaults.color = '#8b949e';
-Chart.defaults.borderColor = '#30363d';
-Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
-Chart.defaults.font.size = 11;
-
-const app = (() => {
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzFanoakpPL3NaMh8CqbolDF5wo9iVb6ikIKQavQh15aGJYBCj7rGQdWyE3sMC911wxdA/exec';
+/* =========================================
+   1. VARIABLES & THEME SETUP
+   ========================================= */
+:root {
+    /* Background Colors (TEMA ASLI ANDA) */
+    --bg-body: #212121;
+    --bg-sidebar: #171717;
+    --bg-card: #2f2f2f;
+    --bg-hover: #424242;
     
-    let state = {
-        rawData: [],
-        sector: 'SUBSIDI',      
-        activeProduct: 'UREA',  
-        selectedYear: new Date().getFullYear(),
-        sidebarOpen: true
-    };
-
-    let chartNasional = null;
-    let chartProvinsi = null;
-
-    // --- HELPER UNTUK DROPDOWN GITHUB STYLE ---
-    const initCustomDropdown = (selectId, onChangeCallback) => {
-        const originalSelect = document.getElementById(selectId);
-        if (!originalSelect) return;
-
-        // Cek jika sudah ada wrapper, hapus dulu agar tidak duplikat saat re-render
-        if (originalSelect.nextElementSibling && originalSelect.nextElementSibling.classList.contains('custom-dropdown-wrapper')) {
-            originalSelect.nextElementSibling.remove();
-        }
-
-        // 1. Buat Wrapper
-        const wrapper = document.createElement('div');
-        wrapper.className = 'custom-dropdown-wrapper';
-
-        // 2. Buat Tombol Trigger
-        const trigger = document.createElement('div');
-        trigger.className = 'dropdown-trigger';
-        // Set teks awal
-        const selectedOption = originalSelect.options[originalSelect.selectedIndex];
-        trigger.innerText = selectedOption ? selectedOption.text : 'Pilih...';
-
-        // 3. Buat Menu Container
-        const menu = document.createElement('div');
-        menu.className = 'dropdown-menu';
-
-        // Label Header Kecil (Opsional, ala GitHub)
-        const headerLabel = document.createElement('div');
-        headerLabel.className = 'dropdown-header-label';
-        headerLabel.innerText = selectId === 'year-select' ? 'Pilih Tahun' : 'Filter Provinsi';
-        menu.appendChild(headerLabel);
-
-        const scrollContainer = document.createElement('div');
-        scrollContainer.className = 'dropdown-scroll';
-
-        // 4. Loop Opsi dari Select Asli
-        Array.from(originalSelect.options).forEach(opt => {
-            const item = document.createElement('div');
-            item.className = 'dropdown-item';
-            if (opt.selected) item.classList.add('selected');
-            item.innerText = opt.text;
-
-            // Klik Item
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                // Update Select Asli
-                originalSelect.value = opt.value;
-                // Update Teks Trigger
-                trigger.innerText = opt.text;
-                // Update Visual Selected
-                menu.querySelectorAll('.dropdown-item').forEach(el => el.classList.remove('selected'));
-                item.classList.add('selected');
-                // Tutup Menu
-                wrapper.classList.remove('active');
-                // Jalankan Callback (Render Chart)
-                if (onChangeCallback) onChangeCallback(opt.value);
-            });
-
-            scrollContainer.appendChild(item);
-        });
-
-        menu.appendChild(scrollContainer);
-        wrapper.appendChild(trigger);
-        wrapper.appendChild(menu);
-
-        // Masukkan Custom Dropdown SETELAH Select Asli
-        originalSelect.parentNode.insertBefore(wrapper, originalSelect.nextSibling);
-
-        // 5. Event Klik Trigger (Buka/Tutup)
-        trigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // Tutup dropdown lain
-            document.querySelectorAll('.custom-dropdown-wrapper').forEach(w => {
-                if (w !== wrapper) w.classList.remove('active');
-            });
-            wrapper.classList.toggle('active');
-        });
-
-        // 6. Klik di luar untuk tutup
-        document.addEventListener('click', () => {
-            wrapper.classList.remove('active');
-        });
-    };
-
-    // --- UTILS ---
-    const parseIndoNumber = (str) => {
-        if(typeof str === 'number') return str;
-        if(!str) return 0;
-        let clean = String(str).replace(/\./g, '').replace(/,/g, '.');
-        return parseFloat(clean) || 0;
-    };
-
-    const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(num);
-
-    const normalizeMonth = (str) => {
-        const map = {'JAN':0, 'JANUARI':0, 'FEB':1, 'FEBRUARI':1, 'MAR':2, 'MARET':2, 'APR':3, 'APRIL':3, 'MEI':4, 'MAY':4, 'JUN':5, 'JUNI':5, 'JUL':6, 'JULI':6, 'AGU':7, 'AGUSTUS':7, 'SEP':8, 'SEPTEMBER':8, 'OKT':9, 'OKTOBER':9, 'NOV':10, 'NOVEMBER':10, 'DES':11, 'DESEMBER':11};
-        return map[String(str).toUpperCase().trim()] ?? -1;
-    };
+    /* Text Colors */
+    --text-primary: #ececec;
+    --text-secondary: #b3b3b3;
+    --text-muted: #666666;
     
-    const toTitleCase = (str) => str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+    /* Borders */
+    --border-color: #424242;
+    --border-subtle: #3a3a3a;
     
-    const hexToRgbA = (hex, alpha) => {
-        let c; if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){ c= hex.substring(1).split(''); if(c.length== 3){ c= [c[0], c[0], c[1], c[1], c[2], c[2]]; } c= '0x'+c.join(''); return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')'; } return hex;
-    }
+    /* Brand & Sentiment Colors */
+    --color-urea: #fbbf24;      /* Amber */
+    --color-npk: #38bdf8;       /* Sky Blue */
+    --color-success: #4ade80;   /* Green */
+    --color-danger: #ff5252;    /* Red Accent */
+    --color-primary: #a5b4fc;   /* Indigo Light */
+    --color-stock: #a8a29e;     /* Stone */
+    --color-accent-1: #ffffff;
 
-    // --- INIT ---
-    const init = () => { fetchData(); checkScreenSize(); };
+    /* Layout Dimensions */
+    --sidebar-width: 260px;
+    --header-height: 64px;
+    --card-radius: 16px;
+    --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-    const checkScreenSize = () => {
-        if(window.innerWidth <= 768) { state.sidebarOpen = false; } 
-        else { state.sidebarOpen = true; }
-        renderSidebar();
-    };
+/* =========================================
+   2. GLOBAL RESET
+   ========================================= */
+* { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
 
-    const fetchData = async () => {
-        document.getElementById('loader').style.display = 'flex';
-        try {
-            const res = await fetch(API_URL);
-            const data = await res.json();
-            processData(data);
-        } catch (err) {
-            console.error("Error:", err);
-        } finally {
-            document.getElementById('loader').style.display = 'none';
-        }
-    };
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-body); }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #666; }
 
-    const processData = (data) => {
-        state.rawData = data.map(row => ({
-            TAHUN: parseInt(row.TAHUN),
-            BULAN: normalizeMonth(row.BULAN),
-            SEKTOR: String(row.SEKTOR || '').toUpperCase(),
-            PRODUK: String(row.PRODUK || '').toUpperCase(),
-            JENIS: String(row.JENIS || '').toUpperCase(),
-            PROVINSI: toTitleCase(String(row.PROVINSI || '')),
-            TONASE: parseIndoNumber(row.TONASE)
-        }));
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    font-size: 14px; /* Ukuran standar dikembalikan */
+}
 
-        const years = [...new Set(state.rawData.map(r => r.TAHUN))].sort((a,b) => b-a);
-        const yearSel = document.getElementById('year-select');
-        yearSel.innerHTML = '';
-        years.forEach(y => {
-            let opt = document.createElement('option');
-            opt.value = y; opt.text = y;
-            if(y === state.selectedYear) opt.selected = true;
-            yearSel.appendChild(opt);
-        });
-        if(!years.includes(state.selectedYear) && years.length > 0) state.selectedYear = years[0];
+/* =========================================
+   3. SIDEBAR
+   ========================================= */
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    display: flex; flex-direction: column;
+    padding: 20px 16px;
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 50;
+    transition: transform var(--transition);
+    transform: translateX(0);
+}
+.sidebar.closed { transform: translateX(-100%); }
 
-        // INIT DROPDOWN TAHUN (Github Style)
-        initCustomDropdown('year-select', (val) => app.changeYear(val));
+.brand {
+    padding-bottom: 20px; border-bottom: none; margin-bottom: 10px;
+    white-space: nowrap; overflow: hidden; display: flex; align-items: center; min-height: 50px; 
+}
+.brand-content { display: flex; flex-direction: column; margin-left: 10px; }
+.brand h2 { font-size: 20px; font-weight: 800; color: var(--text-primary); margin: 0; line-height: 1.2; letter-spacing: 0.5px; }
+.brand h2 span { font-weight: 400; color: var(--color-urea); }
+.brand p { font-size: 11px; color: var(--text-secondary); margin: 2px 0 0 0; font-weight: 400; letter-spacing: 0.5px; }
 
-        updateDashboard(); 
-    };
+.nav-header { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin: 16px 12px 8px; letter-spacing: 1px; white-space: nowrap; }
 
-    const populateProvDropdown = (provKeys) => {
-        const s = document.getElementById('dropdown-provinsi');
-        const prevVal = s.value; 
-        s.innerHTML = '';
+.nav-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px; border-radius: 12px; cursor: pointer;
+    color: var(--text-secondary); font-size: 14px; font-weight: 500;
+    transition: all 0.2s; margin-bottom: 4px; white-space: nowrap; overflow: hidden;
+}
+.nav-item i { width: 20px; text-align: center; font-size: 16px; flex-shrink: 0; }
+.nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.nav-item.active { background: var(--bg-hover); color: var(--text-primary); font-weight: 600; }
+.nav-item.active i { color: var(--color-urea); }
 
-        if(!provKeys || provKeys.length === 0) {
-            let opt = document.createElement('option');
-            opt.innerText = "Tidak ada data";
-            s.appendChild(opt);
-        } else {
-            const sortedProvs = provKeys.filter(p => p !== 'LAINNYA').sort();
-            sortedProvs.forEach(prov => {
-                let opt = document.createElement('option');
-                opt.value = prov; opt.innerText = prov;
-                s.appendChild(opt);
-            });
-            
-            if (prevVal && sortedProvs.includes(prevVal)) {
-                s.value = prevVal; 
-            } else if (sortedProvs.length > 0) {
-                s.value = sortedProvs[0]; 
-            }
-        }
+.nav-spacer { flex-grow: 1; }
+.nav-login { margin-top: auto; padding-top: 10px; }
 
-        // INIT DROPDOWN PROVINSI (Github Style) - Re-init setiap kali data berubah
-        initCustomDropdown('dropdown-provinsi', () => app.renderProvChart());
-    };
+/* =========================================
+   4. MAIN CONTENT
+   ========================================= */
+.main-content {
+    flex: 1; margin-left: var(--sidebar-width);
+    display: flex; flex-direction: column;
+    height: 100vh; overflow: hidden;
+    transition: margin-left var(--transition);
+}
+.main-content.closed { margin-left: 0; }
 
-    // --- CORE LOGIC ---
-    const updateDashboard = () => {
-        const { rawData, selectedYear, sector, activeProduct } = state;
-        let kpiStats = {
-            curr: { UREA: {real:0, target:0}, NPK: {real:0, target:0} },
-            prev: { UREA: {real:0}, NPK: {real:0} },
-            nasional: { UREA: {real:Array(12).fill(0), target:Array(12).fill(0), stock:Array(12).fill(0)}, NPK: {real:Array(12).fill(0), target:Array(12).fill(0), stock:Array(12).fill(0)} }
-        };
-        let rankStats = {}; 
-        let dropdownProvs = new Set();
+header {
+    height: var(--header-height); background: var(--bg-body); 
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; flex-shrink: 0;
+}
+.header-left { display: flex; align-items: center; gap: 20px; }
 
-        rawData.forEach(r => {
-            let isSectorMatch = (sector === 'SUBSIDI') ? r.SEKTOR.includes('SUBSIDI') : r.SEKTOR.includes('RETAIL');
-            if (!isSectorMatch) return;
-            let prodKey = '';
-            if (r.PRODUK.includes('UREA') || r.PRODUK.includes('NITREA')) prodKey = 'UREA';
-            else if (r.PRODUK.includes('NPK') || r.PRODUK.includes('PHONSKA')) prodKey = 'NPK';
-            if (!prodKey) return;
+.btn-toggle-sidebar {
+    background: transparent; border: none; color: var(--text-secondary);
+    font-size: 18px; cursor: pointer; padding: 8px; border-radius: 8px;
+}
+.btn-toggle-sidebar:hover { background: var(--bg-hover); color: var(--text-primary); }
 
-            let isReal = r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN');
-            let isTarget = r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET') || r.JENIS.includes('RKO');
-            let isStock = r.JENIS.includes('STOK') || r.JENIS.includes('STOCK') || r.JENIS.includes('PERSEDIAAN') || r.JENIS.includes('AKTUAL');
+.page-title h1 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 0px; }
+.page-title p { font-size: 11px; color: var(--text-secondary); }
 
-            if (r.TAHUN === selectedYear) {
-                if (isReal) {
-                    kpiStats.curr[prodKey].real += r.TONASE;
-                    if(r.BULAN >= 0) kpiStats.nasional[prodKey].real[r.BULAN] += r.TONASE;
-                } else if (isTarget) {
-                    kpiStats.curr[prodKey].target += r.TONASE;
-                    if(r.BULAN >= 0) kpiStats.nasional[prodKey].target[r.BULAN] += r.TONASE;
-                } else if (isStock && r.BULAN >= 0) kpiStats.nasional[prodKey].stock[r.BULAN] += r.TONASE;
-            }
-            if (r.TAHUN === (selectedYear - 1) && isReal) kpiStats.prev[prodKey].real += r.TONASE;
+.header-actions { display: flex; align-items: center; gap: 12px; }
 
-            if (prodKey === activeProduct && r.TAHUN === selectedYear) {
-                if (r.PROVINSI && r.PROVINSI !== 'LAINNYA') {
-                    dropdownProvs.add(r.PROVINSI);
-                    if (!rankStats[r.PROVINSI]) rankStats[r.PROVINSI] = { real: 0, target: 0 };
-                    if (isReal) rankStats[r.PROVINSI].real += r.TONASE;
-                    if (isTarget) rankStats[r.PROVINSI].target += r.TONASE;
-                }
-            }
-        });
+/* =========================================
+   5. CUSTOM DROPDOWN (GITHUB STYLE - TEMA ANDA)
+   ========================================= */
+/* Sembunyikan Select Asli */
+select.custom-select { display: none !important; }
 
-        populateProvDropdown([...dropdownProvs]);
-        renderKPI(kpiStats);
-        renderRankings(rankStats);
-        renderNasionalChart(kpiStats.nasional);
-        renderProvChart(); 
-    };
+/* Wrapper */
+.custom-dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+    font-family: inherit;
+}
 
-    const renderKPI = (stats) => {
-        const updateCard = (key) => {
-            const real = stats.curr[key].real;
-            const target = stats.curr[key].target;
-            const prev = stats.prev[key].real;
-            const pct = target > 0 ? (real/target*100) : 0;
-            document.getElementById(`val-${key.toLowerCase()}-real`).innerText = formatNumber(real);
-            document.getElementById(`val-${key.toLowerCase()}-target`).innerText = formatNumber(target);
-            document.getElementById(`val-${key.toLowerCase()}-pct`).innerText = pct.toFixed(1) + '%';
-            document.getElementById(`prog-${key.toLowerCase()}`).style.width = Math.min(pct, 100) + '%';
-            let growthVal = 0, isUp = true;
-            if(prev > 0) { growthVal = ((real - prev) / prev) * 100; isUp = growthVal >= 0; } else if (real > 0) growthVal = 100;
-            const badge = document.getElementById(`growth-${key.toLowerCase()}-badge`);
-            document.getElementById(`growth-${key.toLowerCase()}-val`).innerText = Math.abs(growthVal).toFixed(1) + '%';
-            badge.className = `growth-badge ${isUp ? 'growth-up' : 'growth-down'}`;
-            badge.innerHTML = `<i class="fas fa-arrow-${isUp ? 'up' : 'down'}"></i> ${Math.abs(growthVal).toFixed(1)}%`;
-        };
-        updateCard('UREA'); updateCard('NPK');
-    };
+/* Tombol Pemicu (Trigger) */
+.dropdown-trigger {
+    background-color: var(--bg-card); /* Pakai warna kartu tema Anda */
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px 16px; /* Padding lebih lega agar tidak kekecilan */
+    padding-right: 36px;
+    border-radius: 8px;
+    font-size: 13px; /* Ukuran font nyaman */
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 120px;
+    height: 40px; /* Tinggi fix agar seragam */
+    transition: all 0.2s;
+    position: relative;
+}
 
-    const renderRankings = (provData) => {
-        let arr = Object.keys(provData).map(key => {
-            const item = provData[key];
-            let sortVal = state.sector === 'SUBSIDI' ? (item.target > 0 ? (item.real / item.target) * 100 : 0) : item.real;
-            return { name: key, val: sortVal, display: state.sector === 'SUBSIDI' ? sortVal.toFixed(1) + '%' : formatNumber(item.real), rawReal: item.real };
-        });
-        let activeData = arr.filter(item => item.rawReal > 0).sort((a,b) => b.val - a.val);
+.dropdown-trigger:hover {
+    border-color: var(--text-secondary);
+    background-color: var(--bg-hover);
+}
 
-        const listTop5 = document.getElementById('list-top5');
-        listTop5.innerHTML = activeData.length > 0 ? activeData.slice(0, 5).map((item, i) => `
-            <div class="rank-item">
-                <div class="rank-left"><div class="rank-num best">#${i+1}</div><div class="rank-name">${item.name}</div></div>
-                <div class="rank-val val-best">${item.display}</div>
-            </div>`).join('') : '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Tidak ada data</div>';
+/* Ikon Panah Kecil */
+.dropdown-trigger::after {
+    content: '';
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid var(--text-secondary); /* Segitiga abu */
+    transition: transform 0.2s;
+}
 
-        const listOthers = document.getElementById('list-others');
-        listOthers.innerHTML = activeData.length > 5 ? activeData.slice(-5).reverse().map((item) => `
-            <div class="rank-item">
-                <div class="rank-left"><div class="rank-num warn">#${activeData.indexOf(item) + 1}</div><div class="rank-name">${item.name}</div></div>
-                <div class="rank-val val-warn">${item.display}</div>
-            </div>`).join('') : '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data kurang</div>';
-    };
+/* Menu Dropdown (Popup) */
+.dropdown-menu {
+    position: absolute;
+    top: 115%; /* Jarak sedikit dari tombol */
+    right: 0; 
+    background-color: var(--bg-card); /* Warna background tema */
+    border: 1px solid var(--border-color);
+    border-radius: 10px; /* Sudut membulat */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* Shadow lebih lembut */
+    padding: 6px;
+    min-width: 220px;
+    z-index: 999;
+    
+    opacity: 0; visibility: hidden; transform: translateY(-10px);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-    const getChartOptions = () => ({
-        responsive: true, maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: { 
-            legend: { 
-                display: true, position: 'top', align: 'center', 
-                labels: { usePointStyle: true, boxWidth: 6, padding: 15, font: { size: 11 }, generateLabels: (chart) => chart.data.datasets.map((ds, i) => ({ text: ds.label, fillStyle: ds.type === 'line' ? ds.borderColor : ds.backgroundColor, strokeStyle: 'transparent', pointStyle: ds.label === 'Stok' ? 'rect' : 'circle', hidden: !chart.isDatasetVisible(i), datasetIndex: i, fontColor: '#8b949e' })) } 
-            },
-            tooltip: { backgroundColor: 'rgba(22, 27, 34, 0.95)', titleColor: '#ececec', bodyColor: '#8b949e', borderColor: '#30363d', borderWidth: 1, displayColors: false, callbacks: { label: (ctx) => ctx.dataset.label + ': ' + formatNumber(ctx.raw) } }
-        },
-        scales: { x: { grid: { display: false } }, y: { grid: { color: '#21262d' }, beginAtZero: true, ticks: { maxTicksLimit: 5, callback: (v) => v >= 1000 ? (v/1000)+' rb' : v } } }
-    });
+/* State Aktif */
+.custom-dropdown-wrapper.active .dropdown-menu {
+    opacity: 1; visibility: visible; transform: translateY(0);
+}
+.custom-dropdown-wrapper.active .dropdown-trigger {
+    border-color: var(--color-urea); /* Border kuning saat aktif */
+}
+.custom-dropdown-wrapper.active .dropdown-trigger::after {
+    transform: translateY(-50%) rotate(180deg); /* Panah putar */
+}
 
-    const renderNasionalChart = (nasStats) => {
-        const ctx = document.getElementById('chartNasional').getContext('2d');
-        if(chartNasional) chartNasional.destroy();
-        const isUrea = state.activeProduct === 'UREA';
-        const data = isUrea ? nasStats.UREA : nasStats.NPK;
-        const color = isUrea ? '#fbbf24' : '#38bdf8'; 
-        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, hexToRgbA(color, 0.4)); gradient.addColorStop(1, hexToRgbA(color, 0.0));
+/* Header Label di dalam menu (misal: "Pilih Provinsi") */
+.dropdown-header-label {
+    padding: 8px 12px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+}
 
-        chartNasional = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
-                datasets: [
-                    { label: 'Realisasi', data: data.real, type: 'line', borderColor: color, backgroundColor: gradient, fill: { target: 'origin', above: gradient }, tension: 0.4, borderWidth: 2, pointRadius: 3, pointStyle: 'circle', order: 1 },
-                    { label: 'Target', data: data.target, type: 'line', borderColor: '#ff5252', borderDash: [4, 4], borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0, pointStyle: 'circle', order: 0 },
-                    { label: 'Stok', data: data.stock, type: 'bar', backgroundColor: '#30363d', borderColor: '#30363d', borderWidth: 0, barPercentage: 0.5, pointStyle: 'rect', order: 2 }
-                ]
-            }, options: getChartOptions()
-        });
-    };
+/* Item Pilihan */
+.dropdown-item {
+    padding: 10px 12px;
+    padding-left: 32px; /* Ruang untuk centang */
+    font-size: 13px; /* Ukuran font item */
+    color: var(--text-primary);
+    cursor: pointer;
+    border-radius: 6px;
+    position: relative;
+    transition: background 0.2s;
+}
 
-    const renderProvChart = () => {
-        const provName = document.getElementById('dropdown-provinsi').value;
-        const placeholder = document.getElementById('prov-placeholder');
-        const ctx = document.getElementById('chartProvinsi').getContext('2d');
-        if (!provName) { placeholder.style.display = 'flex'; if(chartProvinsi) chartProvinsi.clear(); return; }
-        placeholder.style.display = 'none';
+.dropdown-item:hover {
+    background-color: var(--color-urea);
+    color: #1a1a1a; /* Teks hitam agar kontras dengan kuning */
+    font-weight: 600;
+}
 
-        let mReal = Array(12).fill(0), mTarget = Array(12).fill(0), mStock = Array(12).fill(0);
-        state.rawData.forEach(r => {
-            if (r.TAHUN !== state.selectedYear || r.PROVINSI !== provName) return;
-            let isSectorMatch = (state.sector === 'SUBSIDI') ? r.SEKTOR.includes('SUBSIDI') : r.SEKTOR.includes('RETAIL');
-            if (!isSectorMatch) return;
-            let prodKey = (r.PRODUK.includes('UREA') || r.PRODUK.includes('NITREA')) ? 'UREA' : (r.PRODUK.includes('NPK') || r.PRODUK.includes('PHONSKA')) ? 'NPK' : '';
-            if (prodKey !== state.activeProduct) return;
-            if (r.BULAN >= 0) {
-                if (r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN')) mReal[r.BULAN] += r.TONASE;
-                else if (r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET')) mTarget[r.BULAN] += r.TONASE;
-                else if (r.JENIS.includes('STOK') || r.JENIS.includes('STOCK')) mStock[r.BULAN] += r.TONASE;
-            }
-        });
+/* Tanda Centang (Checkmark) */
+.dropdown-item.selected::before {
+    content: '✓';
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    font-weight: 800; color: var(--color-urea);
+}
+.dropdown-item:hover.selected::before { color: #1a1a1a; }
 
-        if(chartProvinsi) chartProvinsi.destroy();
-        const colorMain = state.activeProduct === 'UREA' ? '#fbbf24' : '#38bdf8';
-        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, hexToRgbA(colorMain, 0.4)); gradient.addColorStop(1, hexToRgbA(colorMain, 0.0));
+/* Scrollbar di dalam Menu */
+.dropdown-scroll { max-height: 250px; overflow-y: auto; }
+.dropdown-scroll::-webkit-scrollbar { width: 4px; }
+.dropdown-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
 
-        chartProvinsi = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
-                datasets: [
-                    { label: 'Realisasi', data: mReal, type: 'line', borderColor: colorMain, backgroundColor: gradient, fill: { target: 'origin', above: gradient }, tension: 0.3, borderWidth: 2, pointRadius: 4, pointStyle: 'circle', order: 1 },
-                    { label: 'Target', data: mTarget, type: 'line', borderColor: '#ff5252', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, tension: 0.3, pointStyle: 'circle', order: 0 },
-                    { label: 'Stok', data: mStock, type: 'bar', backgroundColor: '#30363d', borderColor: '#30363d', borderWidth: 0, barPercentage: 0.5, pointStyle: 'rect', order: 2 }
-                ]
-            }, options: getChartOptions()
-        });
-    };
 
-    const renderSidebar = () => {
-        const sb = document.getElementById('sidebar');
-        const main = document.getElementById('main-content');
-        if (state.sidebarOpen) { sb.classList.remove('closed'); sb.classList.add('show'); main.classList.remove('closed'); } 
-        else { sb.classList.add('closed'); sb.classList.remove('show'); main.classList.add('closed'); }
-    };
+/* =========================================
+   6. GRID & CARDS
+   ========================================= */
+.content-scroll { flex: 1; overflow-y: auto; padding: 20px 32px 40px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px; }
+.chart-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 20px; margin-bottom: 20px; }
+.ranking-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-    return {
-        init,
-        toggleSidebar: () => { state.sidebarOpen = !state.sidebarOpen; renderSidebar(); },
-        setSector: (sec) => {
-            state.sector = sec;
-            document.getElementById('nav-subsidi').classList.toggle('active', sec === 'SUBSIDI');
-            document.getElementById('nav-retail').classList.toggle('active', sec === 'RETAIL');
-            document.getElementById('page-title-text').innerText = sec === 'SUBSIDI' ? 'Subsidi' : 'Retail';
-            updateDashboard();
-            if(window.innerWidth <= 768) { state.sidebarOpen = false; renderSidebar(); }
-        },
-        changeYear: (val) => { state.selectedYear = parseInt(val); updateDashboard(); },
-        setChartProduct: (prod) => {
-            state.activeProduct = prod;
-            document.getElementById('btn-nas-urea').classList.toggle('active', prod === 'UREA');
-            document.getElementById('btn-nas-npk').classList.toggle('active', prod === 'NPK');
-            updateDashboard();
-        },
-        renderProvChart
-    };
-})();
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--card-radius);
+    padding: 24px;
+    display: flex; flex-direction: column;
+    transition: transform 0.2s;
+}
+.card:hover { border-color: var(--border-subtle); }
 
-window.onload = app.init;
+/* =========================================
+   7. KPI CARDS
+   ========================================= */
+.kpi-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.kpi-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-icon { 
+    width: 36px; height: 36px; border-radius: 10px; 
+    display: flex; align-items: center; justify-content: center; 
+    font-size: 16px; background: var(--bg-hover); color: var(--text-primary);
+}
+.icon-urea { color: var(--color-urea); }
+.icon-npk { color: var(--color-npk); }
+.kpi-value { font-size: 26px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.kpi-sub { font-size: 12px; color: var(--text-secondary); display: flex; justify-content: space-between; margin-bottom: 12px; }
+
+.progress-track { height: 4px; background: var(--bg-body); border-radius: 4px; overflow: hidden; }
+.progress-bar { height: 100%; border-radius: 4px; }
+.bg-urea { background: var(--color-urea); }
+.bg-npk { background: var(--color-npk); }
+
+.growth-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+}
+.growth-up { background: rgba(74, 222, 128, 0.15); color: var(--color-success); }
+.growth-down { background: rgba(248, 113, 113, 0.15); color: var(--color-danger); }
+
+/* =========================================
+   8. CHARTS & HEADERS
+   ========================================= */
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; min-height: 36px; }
+.chart-title { font-size: 15px; font-weight: 700; color: var(--text-primary); transition: color 0.3s; }
+
+/* FIX: Judul Ranking & Icon (Kiri Teks, Kanan Icon) */
+.ranking-grid .chart-header .chart-title {
+    display: flex; justify-content: space-between; align-items: center; width: 100%;
+}
+.ranking-grid .chart-header .chart-title i { font-size: 1.25rem; opacity: 0.8; }
+
+.btn-group { 
+    background: var(--bg-body); padding: 4px; border-radius: 10px; 
+    display: flex; gap: 2px; width: auto; 
+}
+.btn-filter {
+    background: transparent; border: none; color: var(--text-secondary);
+    padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer;
+    transition: 0.2s;
+}
+.btn-filter.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+.btn-filter.active.f-urea { color: var(--color-urea); }
+.btn-filter.active.f-npk { color: var(--color-npk); }
+
+.chart-canvas-container { position: relative; height: 280px; width: 100%; }
+
+/* =========================================
+   9. RANKING LIST
+   ========================================= */
+.rank-list { display: flex; flex-direction: column; gap: 0; }
+.rank-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid var(--border-color);
+}
+.rank-item:last-child { border-bottom: none; }
+
+.rank-left { display: flex; align-items: center; gap: 12px; }
+
+.rank-num { 
+    width: 24px; height: 24px; border-radius: 6px; background: var(--bg-body); 
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; 
+}
+.rank-num.best { background: rgba(255, 255, 255, 0.1); color: var(--color-accent-1); }
+.rank-num.warn { background: transparent; color: var(--color-danger); width: auto; padding-right: 4px; font-size: 12px; }
+
+.rank-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.rank-val { font-size: 13px; font-weight: 700; text-align: right; }
+.val-best { color: var(--color-accent-1); }
+.val-warn { color: var(--color-danger); }
+
+/* =========================================
+   10. LOADER & RESPONSIVE
+   ========================================= */
+#loader {
+    position: fixed; inset: 0; background: var(--bg-body); z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.spinner {
+    width: 40px; height: 40px; border: 3px solid var(--border-color);
+    border-top-color: var(--color-urea); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin-bottom: 16px;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+@media (max-width: 1200px) { 
+    .kpi-grid { grid-template-columns: 1fr 1fr; } 
+    .chart-grid, .ranking-grid { grid-template-columns: 1fr; } 
+}
+@media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); width: 240px; }
+    .sidebar.show { transform: translateX(0); }
+    .main-content { margin-left: 0 !important; }
+    .kpi-grid { grid-template-columns: 1fr; }
+    header { padding: 0 20px; }
+    .content-scroll { padding: 20px; }
+    .brand h2 { font-size: 18px; }
+}

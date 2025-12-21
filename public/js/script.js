@@ -4,7 +4,7 @@ Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
 Chart.defaults.font.size = 11;
 
 const app = (() => {
-    // ⚠️ URL WEB APP ⚠️
+    // ⚠️ PASTIKAN URL WEB APP ANDA BENAR DI SINI ⚠️
     const API_URL = 'https://script.google.com/macros/s/AKfycbzFanoakpPL3NaMh8CqbolDF5wo9iVb6ikIKQavQh15aGJYBCj7rGQdWyE3sMC911wxdA/exec';
     
     let state = {
@@ -144,7 +144,6 @@ const app = (() => {
             let isTarget = r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET') || r.JENIS.includes('RKO');
             let isStock = r.JENIS.includes('STOK') || r.JENIS.includes('STOCK');
 
-            // -- Logic KPI Global --
             if (r.TAHUN === selectedYear) {
                 if (isReal) {
                     kpiStats.curr[prodKey].real += r.TONASE;
@@ -158,14 +157,12 @@ const app = (() => {
             }
             if (r.TAHUN === (selectedYear - 1) && isReal) kpiStats.prev[prodKey].real += r.TONASE;
 
-            // -- Logic Ranking & Dropdown (Hanya Produk Aktif) --
             if (prodKey === activeProduct && r.TAHUN === selectedYear) {
                 if (r.PROVINSI && r.PROVINSI !== 'LAINNYA') {
                     dropdownProvs.add(r.PROVINSI);
                     if (!rankStats[r.PROVINSI]) rankStats[r.PROVINSI] = { real: 0, target: 0 };
                     
                     if (isReal) rankStats[r.PROVINSI].real += r.TONASE;
-                    // PENTING: Ambil Target juga untuk perhitungan % subsidi
                     if (isTarget) rankStats[r.PROVINSI].target += r.TONASE;
                 }
             }
@@ -206,22 +203,19 @@ const app = (() => {
         updateCard('NPK');
     };
 
-    // --- RENDER RANKING (LOGIKA DIPERBAIKI DISINI) ---
+    // --- RENDER RANKING (PERBAIKAN LOGIKA DISINI) ---
     const renderRankings = (provData) => {
-        // 1. Map Data
+        // 1. Buat Array Data
         let arr = Object.keys(provData).map(key => {
             const item = provData[key];
             let sortVal = 0;
             let displayVal = '';
 
-            // LOGIKA PEMISAHAN SUBSIDI vs RETAIL
+            // Subsidi = Sort by % | Retail = Sort by Tonase
             if (state.sector === 'SUBSIDI') {
-                // Subsidi: Ranking berdasarkan % (Realisasi / Target)
-                // Jika target 0, persen = 0
                 sortVal = item.target > 0 ? (item.real / item.target) * 100 : 0;
                 displayVal = sortVal.toFixed(1) + '%';
             } else {
-                // Retail: Ranking berdasarkan Tonase
                 sortVal = item.real;
                 displayVal = formatNumber(item.real);
             }
@@ -230,20 +224,29 @@ const app = (() => {
                 name: key, 
                 val: sortVal,
                 display: displayVal,
-                rawReal: item.real // Disimpan utk filter 0
+                rawReal: item.real // Untuk filter 0
             };
         });
 
-        // 2. Filter: Hanya tampilkan yg ada realisasi (> 0)
+        // 2. Filter yang 0 realisasi
         let activeData = arr.filter(item => item.rawReal > 0);
 
-        // 3. Sort Descending (Tertinggi ke Terendah)
+        // 3. Sort Tinggi ke Rendah
         activeData.sort((a,b) => b.val - a.val);
 
-        // --- TOP 5 (TERTINGGI) ---
+        // 4. LOGIKA BARU: PISAHKAN TOP 5 DAN SISANYA
+        // Top 5: Index 0 - 4
+        const top5 = activeData.slice(0, 5);
+        
+        // Sisa: Index 5 ke bawah (Jika ada)
+        // Kita ambil "The Rest", lalu kita balik (Reverse) agar yang paling rendah/jelek muncul di atas list peringatan
+        // Dan kita ambil 5 terburuk dari sisa tersebut
+        const others = activeData.slice(5).reverse().slice(0, 5);
+
+        // --- RENDER TOP 5 ---
         const listTop5 = document.getElementById('list-top5');
-        if (activeData.length > 0) {
-            listTop5.innerHTML = activeData.slice(0, 5).map((item, i) => `
+        if (top5.length > 0) {
+            listTop5.innerHTML = top5.map((item, i) => `
                 <div class="rank-item">
                     <div class="rank-left">
                         <div class="rank-num best">${i+1}</div>
@@ -256,24 +259,20 @@ const app = (() => {
             listTop5.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Tidak ada data</div>';
         }
 
-        // --- BOTTOM 5 (TERENDAH - PERLU PERHATIAN) ---
-        // Ambil dari bawah array, lalu reverse agar urut dari yang paling jelek
+        // --- RENDER PERLU PERHATIAN (SISA DARI TOP 5) ---
         const listOthers = document.getElementById('list-others');
-        if(activeData.length > 5) {
-            // Ambil 5 terbawah
-            const bottom5 = activeData.slice(-5).reverse(); 
-            
-            listOthers.innerHTML = bottom5.map((item, i) => `
+        if(others.length > 0) {
+            listOthers.innerHTML = others.map((item, i) => `
                 <div class="rank-item">
                     <div class="rank-left">
-                        <div class="rank-num warn">${i+1}</div>
+                        <div class="rank-num warn"><i class="fas fa-exclamation"></i></div>
                         <div class="rank-name">${item.name}</div>
                     </div>
                     <div class="rank-val val-warn">${item.display}</div>
                 </div>
             `).join('');
         } else {
-            listOthers.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data kurang</div>';
+            listOthers.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Semua data masuk Top 5</div>';
         }
     };
 

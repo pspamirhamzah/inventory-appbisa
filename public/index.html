@@ -44,30 +44,30 @@
                 </div>
             </div>
             <div class="header-actions">
-                <select class="custom-select" id="year-select" onchange="app.changeYear(this.value)"></select>
+                <select class="custom-select select-lg" id="year-select" onchange="app.changeYear(this.value)"></select>
             </div>
         </header>
 
         <div class="content-scroll">
             <div class="kpi-grid">
-                <div class="card">
+                <div class="card kpi-card">
                     <div class="kpi-head"><div class="kpi-title">Realisasi Urea</div><i class="fas fa-cubes icon-urea"></i></div>
                     <div class="kpi-value" id="val-urea-real">0</div>
                     <div class="kpi-sub"><span>Target: <span id="val-urea-target">0</span></span><span id="val-urea-pct">0%</span></div>
                     <div class="progress-track"><div class="progress-bar bg-urea" id="prog-urea"></div></div>
                 </div>
-                <div class="card">
+                <div class="card kpi-card">
                     <div class="kpi-head"><div class="kpi-title">Realisasi NPK</div><i class="fas fa-leaf icon-npk"></i></div>
                     <div class="kpi-value" id="val-npk-real">0</div>
                     <div class="kpi-sub"><span>Target: <span id="val-npk-target">0</span></span><span id="val-npk-pct">0%</span></div>
                     <div class="progress-track"><div class="progress-bar bg-npk" id="prog-npk"></div></div>
                 </div>
-                <div class="card">
+                <div class="card kpi-card">
                     <div class="kpi-head"><div class="kpi-title">Growth Urea</div><i class="fas fa-chart-line"></i></div>
                     <div class="kpi-value" id="growth-urea-val">0%</div>
                     <div class="kpi-sub"><span>vs Thn Lalu</span><div id="growth-urea-badge" class="growth-badge">0%</div></div>
                 </div>
-                <div class="card">
+                <div class="card kpi-card">
                     <div class="kpi-head"><div class="kpi-title">Growth NPK</div><i class="fas fa-chart-line"></i></div>
                     <div class="kpi-value" id="growth-npk-val">0%</div>
                     <div class="kpi-sub"><span>vs Thn Lalu</span><div id="growth-npk-badge" class="growth-badge">0%</div></div>
@@ -75,7 +75,7 @@
             </div>
 
             <div class="chart-grid">
-                <div class="card">
+                <div class="card chart-card">
                     <div class="chart-header">
                         <span class="chart-title">Realisasi Nasional</span>
                         <div class="btn-group">
@@ -85,10 +85,10 @@
                     </div>
                     <div class="chart-container"><canvas id="chartNasional"></canvas></div>
                 </div>
-                <div class="card">
+                <div class="card chart-card">
                     <div class="chart-header">
                         <span class="chart-title">Realisasi Provinsi</span>
-                        <select class="custom-select" id="dropdown-provinsi" onchange="app.renderProvChart()"></select>
+                        <select class="custom-select select-lg" id="dropdown-provinsi" onchange="app.renderProvChart()"></select>
                     </div>
                     <div class="chart-container">
                         <canvas id="chartProvinsi"></canvas>
@@ -108,11 +108,9 @@
                 </div>
             </div>
 
-            <footer class="footer">
-                <div class="footer-content">
-                    <p class="copyright">Copyright &#169; 2025 Adm Penjualan PSO & Ritel</p>
-                    <p class="designer">Design by 00.0034</p>
-                </div>
+            <footer class="footer-final">
+                <p class="copy">Copyright &#169; 2025 Adm Penjualan PSO & Ritel</p>
+                <p class="dev">Design by 00.0034</p>
             </footer>
         </div>
     </main>

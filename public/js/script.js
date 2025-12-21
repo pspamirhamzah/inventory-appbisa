@@ -240,7 +240,7 @@ const app = (() => {
         }
     };
 
-    // --- CHART CONFIG (PERBAIKAN UKURAN LEGENDA) ---
+    // --- CHART CONFIG (CUSTOM LEGEND: DOT/RECT SOLID) ---
     const getChartOptions = () => ({
         responsive: true, 
         maintainAspectRatio: false,
@@ -252,13 +252,30 @@ const app = (() => {
                 align: 'end',
                 labels: { 
                     usePointStyle: true, 
-                    // PERBAIKAN DISINI: Memperbesar wadah ikon menjadi 9px
-                    // Agar kotak (Stok) terlihat lebih besar dan seimbang
-                    // Sedangkan lingkaran (Realisasi/Target) tetap kecil karena pointRadius-nya.
-                    boxWidth: 9,
-                    boxHeight: 9,
+                    boxWidth: 8,         // Ukuran Icon Legenda (Cukup 8px, seimbang dengan teks)
                     padding: 15,
-                    font: { size: 11 }
+                    font: { size: 11 },
+                    // --- CUSTOM LABEL GENERATOR ---
+                    // Fungsi ini mengabaikan pointRadius dataset, sehingga legenda selalu konsisten
+                    generateLabels: (chart) => {
+                        return chart.data.datasets.map((dataset, i) => {
+                            // Tentukan warna SOLID untuk legenda (Ambil borderColor untuk line, backgroundColor untuk bar)
+                            let color = dataset.type === 'line' ? dataset.borderColor : dataset.backgroundColor;
+                            
+                            // Tentukan bentuk: Rect untuk Stok, Circle untuk lainnya
+                            let shape = dataset.label === 'Stok' ? 'rect' : 'circle';
+
+                            return {
+                                text: dataset.label,
+                                fillStyle: color,        // Warna isi penuh (solid)
+                                strokeStyle: 'transparent', // Tidak ada garis pinggir
+                                pointStyle: shape,       // Bentuk ikon
+                                lineWidth: 0,
+                                hidden: !chart.isDatasetVisible(i),
+                                datasetIndex: i
+                            };
+                        });
+                    }
                 } 
             },
             tooltip: { 
@@ -299,26 +316,24 @@ const app = (() => {
                         data: data.real, 
                         type: 'line',
                         borderColor: color, 
-                        backgroundColor: color, // Untuk warna Dot Legenda
+                        backgroundColor: gradient, // Gradient untuk area grafik
                         fill: { target: 'origin', above: gradient }, 
                         tension: 0.4, 
                         borderWidth: 3, 
-                        pointRadius: 3, 
-                        pointStyle: 'circle', // DOT
+                        pointRadius: 3, // Dot di grafik
+                        pointStyle: 'circle',
                         order: 1
                     },
                     {
                         label: 'Target', 
                         data: data.target, 
                         type: 'line',
-                        borderColor: '#ff5252', // Merah
-                        backgroundColor: '#ff5252', // Untuk warna Dot Legenda
+                        borderColor: '#ff5252', 
                         borderDash: [6, 6],
                         borderWidth: 2, 
                         fill: false, 
                         tension: 0.4, 
-                        pointRadius: 0, // Tidak ada dot di grafik
-                        pointStyle: 'circle', // TAPI ada Dot di Legenda
+                        pointRadius: 0, // Grafik Target BERSIH (Tanpa Dot)
                         order: 0 
                     },
                     {
@@ -326,15 +341,14 @@ const app = (() => {
                         data: data.stock, 
                         type: 'bar', 
                         backgroundColor: 'rgba(75, 85, 99, 0.8)', 
-                        borderColor: 'rgba(75, 85, 99, 0.8)', // Untuk warna Dot Legenda
+                        borderColor: 'rgba(75, 85, 99, 0.8)',
                         borderWidth: 0, 
                         barPercentage: 0.5, 
-                        pointStyle: 'rect', // KOTAK (RECTANGLE) UNTUK LEGENDA STOK
                         order: 2
                     }
                 ]
             },
-            options: getChartOptions()
+            options: getChartOptions() // Menggunakan opsi legenda custom di atas
         });
     };
 
@@ -386,7 +400,7 @@ const app = (() => {
                         data: mReal, 
                         type: 'line', 
                         borderColor: colorMain, 
-                        backgroundColor: colorMain, // Dot Color
+                        backgroundColor: gradient,
                         fill: { target: 'origin', above: gradient },
                         tension: 0.3, 
                         borderWidth: 2, 
@@ -399,12 +413,11 @@ const app = (() => {
                         data: mTarget, 
                         type: 'line', 
                         borderColor: '#ff5252', 
-                        backgroundColor: '#ff5252', // Dot Color
+                        backgroundColor: '#ff5252', 
                         borderDash: [4, 4], 
                         borderWidth: 1, 
-                        pointRadius: 0, 
+                        pointRadius: 0, // Grafik Target BERSIH (Tanpa Dot)
                         tension: 0.3, 
-                        pointStyle: 'circle', // Dot Legend
                         order: 0
                     },
                     {
@@ -412,15 +425,14 @@ const app = (() => {
                         data: mStock, 
                         type: 'bar', 
                         backgroundColor: 'rgba(75, 85, 99, 0.8)', 
-                        borderColor: 'rgba(75, 85, 99, 0.8)', // Dot Color
+                        borderColor: 'rgba(75, 85, 99, 0.8)', 
                         borderWidth: 0, 
                         barPercentage: 0.5, 
-                        pointStyle: 'rect', // KOTAK (RECTANGLE) UNTUK LEGENDA STOK
                         order: 2
                     }
                 ]
             },
-            options: getChartOptions()
+            options: getChartOptions() // Menggunakan opsi legenda custom di atas
         });
     };
 

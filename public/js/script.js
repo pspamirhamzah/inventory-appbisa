@@ -240,7 +240,7 @@ const app = (() => {
         }
     };
 
-    // --- CHART CONFIG (Semua Ikon Legenda KOTAK) ---
+    // --- CHART CONFIG (POSISI TENGAH) ---
     const getChartOptions = () => ({
         responsive: true, 
         maintainAspectRatio: false,
@@ -249,30 +249,28 @@ const app = (() => {
             legend: { 
                 display: true, 
                 position: 'top',
-                align: 'end',
+                align: 'center', // <--- POSISI DI TENGAH (CENTER)
                 labels: { 
                     usePointStyle: true, 
-                    boxWidth: 6,         // Ukuran Kotak KECIL (6px)
+                    boxWidth: 6,         
                     padding: 15,
                     font: { size: 11 },
-                    // --- CUSTOM LABEL GENERATOR ---
                     generateLabels: (chart) => {
                         return chart.data.datasets.map((dataset, i) => {
-                            // Ambil warna (border untuk line, background untuk bar)
                             let color = dataset.type === 'line' ? dataset.borderColor : dataset.backgroundColor;
                             
-                            // PAKSA SEMUA JADI KOTAK ('rect')
+                            // SEMUA IKON LEGENDA BERBENTUK KOTAK
                             let shape = 'rect'; 
 
                             return {
                                 text: dataset.label,
-                                fillStyle: color,        // Warna Solid
+                                fillStyle: color,        
                                 strokeStyle: 'transparent',
-                                pointStyle: shape,       // Bentuk KOTAK
+                                pointStyle: shape,       
                                 lineWidth: 0,
                                 hidden: !chart.isDatasetVisible(i),
                                 datasetIndex: i,
-                                fontColor: '#b3b3b3'     // Warna Teks Abu Terang
+                                fontColor: '#b3b3b3'     
                             };
                         });
                     }
@@ -317,7 +315,7 @@ const app = (() => {
                         type: 'line',
                         borderColor: color, 
                         backgroundColor: gradient,
-                        fill: true, 
+                        fill: { target: 'origin', above: gradient }, 
                         tension: 0.4, 
                         borderWidth: 3, 
                         pointRadius: 3, 
@@ -345,6 +343,7 @@ const app = (() => {
                         borderColor: 'rgba(75, 85, 99, 0.8)',
                         borderWidth: 0, 
                         barPercentage: 0.5, 
+                        pointStyle: 'rect', 
                         order: 2
                     }
                 ]
@@ -402,7 +401,7 @@ const app = (() => {
                         type: 'line', 
                         borderColor: colorMain, 
                         backgroundColor: gradient,
-                        fill: true, 
+                        fill: { target: 'origin', above: gradient },
                         tension: 0.3, 
                         borderWidth: 2, 
                         pointRadius: 4, 
@@ -414,6 +413,7 @@ const app = (() => {
                         data: mTarget, 
                         type: 'line', 
                         borderColor: '#ff5252', 
+                        backgroundColor: '#ff5252', 
                         borderDash: [4, 4], 
                         borderWidth: 1, 
                         pointRadius: 0, 
@@ -429,6 +429,7 @@ const app = (() => {
                         borderColor: 'rgba(75, 85, 99, 0.8)', 
                         borderWidth: 0, 
                         barPercentage: 0.5, 
+                        pointStyle: 'rect', 
                         order: 2
                     }
                 ]

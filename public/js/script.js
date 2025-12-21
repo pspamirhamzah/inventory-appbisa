@@ -258,7 +258,7 @@ function createEntryFormHTML() {
 // =========================================================
 // 6. LOGIKA UI & CHART
 // =========================================================
-function setTheme(t) { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('theme', t); const isDark = t === 'dark'; document.getElementById('theme-icon-nav').className = isDark ? 'fas fa-sun' : 'fas fa-moon'; document.getElementById('theme-text').innerText = isDark ? 'Mode Terang' : 'Mode Gelap'; if(rawData.length > 0) updateCharts(); }
+function setTheme(t) {document.documentElement.setAttribute('data-theme', t); localStorage.setItem('theme', t); const isDark = t === 'dark'; const icon = document.getElementById('theme-icon-sidebar'); if(icon) {icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';} if(rawData.length > 0) updateCharts();}
 function toggleTheme() { const current = document.documentElement.getAttribute('data-theme'); setTheme(current === 'dark' ? 'light' : 'dark'); }
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.querySelector('.overlay').classList.toggle('active'); }
 function openModal(id) { document.getElementById(id).classList.add('open'); document.getElementById('modalBackdrop').classList.add('open'); }

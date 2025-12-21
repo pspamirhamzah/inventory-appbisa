@@ -64,7 +64,6 @@ const app = (() => {
             processData(data);
         } catch (err) {
             console.error("Error:", err);
-            // alert("Gagal koneksi data."); 
         } finally {
             document.getElementById('loader').style.display = 'none';
         }
@@ -81,7 +80,6 @@ const app = (() => {
             TONASE: parseIndoNumber(row.TONASE)
         }));
 
-        // Setup Filter Tahun
         const years = [...new Set(state.rawData.map(r => r.TAHUN))].sort((a,b) => b-a);
         const yearSel = document.getElementById('year-select');
         yearSel.innerHTML = '';
@@ -96,7 +94,6 @@ const app = (() => {
         updateDashboard(); 
     };
 
-    // --- DROPDOWN LOGIC ---
     const populateProvDropdown = (provKeys) => {
         const s = document.getElementById('dropdown-provinsi');
         const prevVal = s.value; 
@@ -118,11 +115,10 @@ const app = (() => {
         if (prevVal && sortedProvs.includes(prevVal)) s.value = prevVal; 
     };
 
-    // --- MAIN DASHBOARD LOGIC ---
+    // --- DASHBOARD LOGIC ---
     const updateDashboard = () => {
         const { rawData, selectedYear, sector, activeProduct } = state;
         
-        // 1. Hitung KPI Cards (UREA & NPK Terpisah)
         let kpiStats = {
             curr: { UREA: {real:0, target:0}, NPK: {real:0, target:0} },
             prev: { UREA: {real:0}, NPK: {real:0} },
@@ -132,7 +128,6 @@ const app = (() => {
             }
         };
 
-        // 2. Hitung Data Ranking & Dropdown (Hanya Produk Aktif)
         let rankStats = {}; 
         let dropdownProvs = new Set();
 
@@ -146,10 +141,11 @@ const app = (() => {
             if (!prodKey) return;
 
             let isReal = r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN');
-            let isTarget = r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET');
+            // PERBAIKAN DI SINI: MENAMBAHKAN 'RKO' KE FILTER TARGET
+            let isTarget = r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET') || r.JENIS.includes('RKO');
             let isStock = r.JENIS.includes('STOK') || r.JENIS.includes('STOCK');
 
-            // -- Logic KPI Global (Semua Produk) --
+            // KPI & Grafik Nasional
             if (r.TAHUN === selectedYear) {
                 if (isReal) {
                     kpiStats.curr[prodKey].real += r.TONASE;
@@ -163,29 +159,32 @@ const app = (() => {
             }
             if (r.TAHUN === (selectedYear - 1) && isReal) kpiStats.prev[prodKey].real += r.TONASE;
 
-            // -- Logic Ranking (Hanya Produk Aktif) --
+            // Ranking & Dropdown (Hanya Produk Aktif)
             if (prodKey === activeProduct && r.TAHUN === selectedYear) {
                 if (r.PROVINSI && r.PROVINSI !== 'LAINNYA') {
                     dropdownProvs.add(r.PROVINSI);
-                    if (!rankStats[r.PROVINSI]) rankStats[r.PROVINSI] = { real: 0 };
+                    if (!rankStats[r.PROVINSI]) rankStats[r.PROVINSI] = { real: 0, target: 0 }; // Siapkan target juga
+                    
                     if (isReal) rankStats[r.PROVINSI].real += r.TONASE;
+                    // Ambil target provinsi juga agar persentase bisa dihitung jika perlu
+                    if (isTarget) rankStats[r.PROVINSI].target += r.TONASE;
                 }
             }
         });
 
         populateProvDropdown([...dropdownProvs]);
         renderKPI(kpiStats);
-        renderRankings(rankStats); // Kirim data ranking spesifik produk aktif
+        renderRankings(rankStats);
         renderNasionalChart(kpiStats.nasional);
         renderProvChart(); 
     };
 
-    // --- RENDERERS ---
     const renderKPI = (stats) => {
         const updateCard = (key) => {
             const real = stats.curr[key].real;
             const target = stats.curr[key].target;
             const prev = stats.prev[key].real;
+            // Hitung Persen: (Real / Target) * 100
             const pct = target > 0 ? (real/target*100) : 0;
             
             document.getElementById(`val-${key.toLowerCase()}-real`).innerText = formatNumber(real);
@@ -210,18 +209,26 @@ const app = (() => {
     };
 
     const renderRankings = (provData) => {
-        // Data provData sekarang hanya berisi data Produk Aktif (Urea ATAU NPK)
         let arr = Object.keys(provData).map(key => {
+            const item = provData[key];
+            let sortVal = 0;
+            let displayVal = '';
+
+            // Tampilkan Angka Realisasi (Bukan Persen) agar konsisten
+            // Kecuali jika Anda ingin persen, ubah logika di bawah
+            sortVal = item.real;
+            displayVal = formatNumber(item.real);
+
             return { 
                 name: key, 
-                real: provData[key].real 
+                val: sortVal,
+                display: displayVal,
+                rawReal: item.real 
             };
         });
 
-        // Sortir dari Terbesar ke Terkecil
-        arr.sort((a,b) => b.real - a.real);
+        arr.sort((a,b) => b.val - a.val);
 
-        // Render Top 5
         const listTop5 = document.getElementById('list-top5');
         if (arr.length > 0) {
             listTop5.innerHTML = arr.slice(0, 5).map((item, i) => `
@@ -230,14 +237,13 @@ const app = (() => {
                         <div class="rank-num best">${i+1}</div>
                         <div class="rank-name">${item.name}</div>
                     </div>
-                    <div class="rank-val val-best">${formatNumber(item.real)}</div>
+                    <div class="rank-val val-best">${item.display}</div>
                 </div>
             `).join('');
         } else {
             listTop5.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Tidak ada data</div>';
         }
 
-        // Render Bottom 5
         const listOthers = document.getElementById('list-others');
         if(arr.length > 5) {
             listOthers.innerHTML = arr.slice(-5).reverse().map((item, i) => `
@@ -246,7 +252,7 @@ const app = (() => {
                         <div class="rank-num warn">${i+1}</div>
                         <div class="rank-name">${item.name}</div>
                     </div>
-                    <div class="rank-val val-warn">${formatNumber(item.real)}</div>
+                    <div class="rank-val val-warn">${item.display}</div>
                 </div>
             `).join('');
         } else {
@@ -286,7 +292,7 @@ const app = (() => {
             options: {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { display: true, labels: { usePointStyle: true, boxWidth: 6 } } },
+                plugins: { legend: { display: true, labels: { usePointStyle: true, boxWidth: 6 } }, },
                 scales: { x: { grid: { display: false } }, y: { grid: { color: '#333' }, beginAtZero: true, ticks: { maxTicksLimit: 5, callback: (v) => v >= 1000 ? (v/1000)+' rb' : v } } }
             }
         });
@@ -315,11 +321,12 @@ const app = (() => {
             if (r.PRODUK.includes('UREA') || r.PRODUK.includes('NITREA')) prodKey = 'UREA';
             else if (r.PRODUK.includes('NPK') || r.PRODUK.includes('PHONSKA')) prodKey = 'NPK';
             
-            if (prodKey !== state.activeProduct) return; // Filter Chart sesuai tombol
+            if (prodKey !== state.activeProduct) return;
 
+            // PERBAIKAN DI SINI: MENAMBAHKAN 'RKO' KE FILTER TARGET CHART
             if (r.BULAN >= 0) {
                 if (r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN')) mReal[r.BULAN] += r.TONASE;
-                else if (r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET')) mTarget[r.BULAN] += r.TONASE;
+                else if (r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET') || r.JENIS.includes('RKO')) mTarget[r.BULAN] += r.TONASE;
                 else if (r.JENIS.includes('STOK') || r.JENIS.includes('STOCK')) mStock[r.BULAN] += r.TONASE;
             }
         });

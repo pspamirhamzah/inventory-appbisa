@@ -1,110 +1,133 @@
-/* =========================================
-   6. RANKINGS (FIX: Agar Tidak Berantakan)
-   ========================================= */
-.rank-list { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 0; /* Gap nol karena kita pakai padding di rank-item */
+:root {
+    --bg-body: #212121;
+    --bg-sidebar: #171717;
+    --bg-card: #2f2f2f;
+    --bg-hover: #424242;
+    --text-p: #ececec;
+    --text-s: #b3b3b3;
+    --text-m: #666666;
+    --border: #424242;
+    --urea: #fbbf24;
+    --npk: #38bdf8;
+    --danger: #f87171;
+    --sidebar-w: 260px;
 }
 
-.rank-item {
+* { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-p);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: var(--sidebar-w);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 20px 16px;
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 100;
+    transition: 0.3s ease;
+}
+.sidebar.closed { transform: translateX(-100%); }
+.brand h2 { font-size: 20px; font-weight: 800; }
+.brand h2 span { font-weight: 400; color: var(--urea); }
+.brand p { font-size: 11px; color: var(--text-s); margin-bottom: 20px; }
+.nav-header { font-size: 11px; font-weight: 700; color: var(--text-m); margin: 15px 10px 5px; text-transform: uppercase; }
+.nav-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; cursor: pointer; color: var(--text-s); font-size: 14px; }
+.nav-item.active { background: var(--bg-hover); color: var(--text-p); font-weight: 600; }
+.nav-item.active i { color: var(--urea); }
+.nav-spacer { flex: 1; }
+
+/* MAIN */
+.main-content { flex: 1; margin-left: var(--sidebar-w); display: flex; flex-direction: column; transition: 0.3s ease; }
+.main-content.closed { margin-left: 0; }
+header { height: 64px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.header-left { display: flex; align-items: center; gap: 15px; }
+.btn-toggle-sidebar { background: none; border: none; color: var(--text-s); font-size: 20px; cursor: pointer; }
+.page-title h1 { font-size: 16px; font-weight: 700; }
+.page-title p { font-size: 11px; color: var(--text-s); }
+
+.content-scroll { flex: 1; overflow-y: auto; padding: 10px 30px 40px; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; }
+
+/* GRIDS */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px; }
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+.ranking-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; min-width: 0; }
+
+/* KPI */
+.kpi-head { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.kpi-title { font-size: 11px; font-weight: 600; color: var(--text-s); text-transform: uppercase; }
+.kpi-value { font-size: 22px; font-weight: 700; margin-bottom: 5px; }
+.kpi-sub { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-s); margin-bottom: 10px; }
+.progress-track { height: 4px; background: var(--bg-body); border-radius: 2px; overflow: hidden; }
+.progress-bar { height: 100%; transition: 0.5s; width: 0; }
+.bg-urea { background: var(--urea); }
+.bg-npk { background: var(--npk); }
+.growth-badge { font-weight: 700; font-size: 11px; }
+
+/* CHARTS */
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.chart-title { font-size: 14px; font-weight: 700; }
+.chart-container { position: relative; height: 260px; }
+.placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 12px; }
+
+/* RANKING (FIX VERTIKAL) */
+.rank-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 14px; font-weight: 700; }
+.rank-header .up { color: var(--npk); }
+.rank-header .down { color: var(--danger); }
+.rank-list { display: flex; flex-direction: column; gap: 8px; }
+
+.rank-item { 
     display: flex; 
     align-items: center; 
-    justify-content: space-between;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border-color);
-    width: 100%; /* Kunci lebar agar tidak menciut */
+    justify-content: space-between; 
+    padding: 8px 0; 
+    border-bottom: 1px solid var(--border);
+    width: 100%;
 }
-
 .rank-item:last-child { border-bottom: none; }
-
 .rank-left { 
     display: flex; 
     align-items: center; 
-    gap: 12px; 
-    flex: 1; /* Biarkan mengambil ruang sisa di kiri */
-    min-width: 0; /* Penting agar text-overflow jalan jika teks kepanjangan */
+    gap: 10px; 
+    flex: 1; /* Ambil ruang sisa agar nama provinsi lebar */
+    min-width: 0;
 }
+.rank-num { font-size: 11px; font-weight: 800; color: var(--text-m); width: 20px; }
+.rank-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rank-val { font-size: 13px; font-weight: 700; margin-left: 10px; flex-shrink: 0; }
 
-.rank-num { 
-    width: 28px; /* Sedikit lebih lebar */
-    height: 24px; 
-    border-radius: 6px; 
-    background: var(--bg-body); 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-    font-size: 11px; 
-    font-weight: 800;
-    flex-shrink: 0;
-}
+/* FOOTER FIX */
+.footer { margin-top: 40px; padding: 20px 0; text-align: center; border-top: 1px solid var(--border); }
+.footer p { font-size: 11px; color: var(--text-m); font-weight: 600; }
+.footer .designer { font-size: 10px; opacity: 0.5; margin-top: 5px; }
 
-.rank-name { 
-    font-size: 13px; 
-    font-weight: 600; 
-    color: var(--text-primary);
-    white-space: nowrap; /* KUNCI: Mencegah nama provinsi turun ke bawah */
-    overflow: hidden;
-    text-overflow: ellipsis; /* Jika nama sangat panjang akan jadi titik-titik (...) */
-}
+/* UTILS */
+.custom-select { background: var(--bg-body); border: 1px solid var(--border); color: var(--text-s); padding: 5px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+.btn-group { background: var(--bg-body); padding: 3px; border-radius: 8px; display: flex; gap: 2px; }
+.btn-filter { background: none; border: none; color: var(--text-s); padding: 5px 12px; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 600; }
+.btn-filter.active { background: var(--bg-card); color: var(--text-p); }
 
-.rank-val { 
-    font-size: 13px; 
-    font-weight: 700; 
-    text-align: right; 
-    margin-left: 10px;
-    flex-shrink: 0; /* Angka tidak boleh gepeng */
-}
+#loader { position: fixed; inset: 0; background: var(--bg-body); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+.spinner { width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--urea); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
 
-.val-best { color: var(--color-accent-1); }
-.val-warn { color: var(--color-danger); }
-
-/* =========================================
-   7. FOOTER FIX (FIX: Ruang Berlebih)
-   ========================================= */
-.footer-section {
-    margin-top: 40px; /* Jarak dari konten di atasnya */
-    padding: 40px 0 40px; /* Jarak atas 40px, bawah 40px (Cukup, tidak berlebihan) */
-    width: 100%;
-    flex-shrink: 0;
-}
-
-.footer-content {
-    text-align: center;
-    border-top: 1px solid var(--border-color);
-    padding-top: 25px;
-}
-
-.copyright {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-weight: 600;
-    line-height: 1;
-}
-
-.design-by {
-    font-size: 10px;
-    color: var(--text-muted);
-    opacity: 0.4;
-    margin-top: 6px;
-    letter-spacing: 0.5px;
-}
-
-/* =========================================
-   8. RESPONSIVE
-   ========================================= */
-@media (max-width: 1200px) {
+/* RESPONSIVE */
+@media (max-width: 1024px) {
     .kpi-grid { grid-template-columns: 1fr 1fr; }
     .chart-grid, .ranking-grid { grid-template-columns: 1fr; }
 }
-
 @media (max-width: 768px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.show { transform: translateX(0); }
-    .main-content { margin-left: 0 !important; }
-    header { padding: 0 20px; }
-    .content-scroll { padding: 20px 20px 0; }
-    
-    /* Ruang bawah di tablet sedikit lebih besar untuk navigasi sistem */
-    .footer-section { padding-bottom: 80px; } 
+    .main-content { margin-left: 0; }
+    .content-scroll { padding: 15px; }
 }

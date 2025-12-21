@@ -4,7 +4,7 @@ Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
 Chart.defaults.font.size = 11;
 
 const app = (() => {
-    // ⚠️ PASTIKAN URL WEB APP ANDA BENAR DI SINI ⚠️
+    // ⚠️ URL WEB APP ⚠️
     const API_URL = 'https://script.google.com/macros/s/AKfycbzFanoakpPL3NaMh8CqbolDF5wo9iVb6ikIKQavQh15aGJYBCj7rGQdWyE3sMC911wxdA/exec';
     
     let state = {
@@ -141,11 +141,10 @@ const app = (() => {
             if (!prodKey) return;
 
             let isReal = r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN');
-            // PERBAIKAN DI SINI: MENAMBAHKAN 'RKO' KE FILTER TARGET
             let isTarget = r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET') || r.JENIS.includes('RKO');
             let isStock = r.JENIS.includes('STOK') || r.JENIS.includes('STOCK');
 
-            // KPI & Grafik Nasional
+            // -- Logic KPI Global --
             if (r.TAHUN === selectedYear) {
                 if (isReal) {
                     kpiStats.curr[prodKey].real += r.TONASE;
@@ -159,14 +158,14 @@ const app = (() => {
             }
             if (r.TAHUN === (selectedYear - 1) && isReal) kpiStats.prev[prodKey].real += r.TONASE;
 
-            // Ranking & Dropdown (Hanya Produk Aktif)
+            // -- Logic Ranking & Dropdown (Hanya Produk Aktif) --
             if (prodKey === activeProduct && r.TAHUN === selectedYear) {
                 if (r.PROVINSI && r.PROVINSI !== 'LAINNYA') {
                     dropdownProvs.add(r.PROVINSI);
-                    if (!rankStats[r.PROVINSI]) rankStats[r.PROVINSI] = { real: 0, target: 0 }; // Siapkan target juga
+                    if (!rankStats[r.PROVINSI]) rankStats[r.PROVINSI] = { real: 0, target: 0 };
                     
                     if (isReal) rankStats[r.PROVINSI].real += r.TONASE;
-                    // Ambil target provinsi juga agar persentase bisa dihitung jika perlu
+                    // PENTING: Ambil Target juga untuk perhitungan % subsidi
                     if (isTarget) rankStats[r.PROVINSI].target += r.TONASE;
                 }
             }
@@ -184,7 +183,6 @@ const app = (() => {
             const real = stats.curr[key].real;
             const target = stats.curr[key].target;
             const prev = stats.prev[key].real;
-            // Hitung Persen: (Real / Target) * 100
             const pct = target > 0 ? (real/target*100) : 0;
             
             document.getElementById(`val-${key.toLowerCase()}-real`).innerText = formatNumber(real);
@@ -208,30 +206,44 @@ const app = (() => {
         updateCard('NPK');
     };
 
+    // --- RENDER RANKING (LOGIKA DIPERBAIKI DISINI) ---
     const renderRankings = (provData) => {
+        // 1. Map Data
         let arr = Object.keys(provData).map(key => {
             const item = provData[key];
             let sortVal = 0;
             let displayVal = '';
 
-            // Tampilkan Angka Realisasi (Bukan Persen) agar konsisten
-            // Kecuali jika Anda ingin persen, ubah logika di bawah
-            sortVal = item.real;
-            displayVal = formatNumber(item.real);
+            // LOGIKA PEMISAHAN SUBSIDI vs RETAIL
+            if (state.sector === 'SUBSIDI') {
+                // Subsidi: Ranking berdasarkan % (Realisasi / Target)
+                // Jika target 0, persen = 0
+                sortVal = item.target > 0 ? (item.real / item.target) * 100 : 0;
+                displayVal = sortVal.toFixed(1) + '%';
+            } else {
+                // Retail: Ranking berdasarkan Tonase
+                sortVal = item.real;
+                displayVal = formatNumber(item.real);
+            }
 
             return { 
                 name: key, 
                 val: sortVal,
                 display: displayVal,
-                rawReal: item.real 
+                rawReal: item.real // Disimpan utk filter 0
             };
         });
 
-        arr.sort((a,b) => b.val - a.val);
+        // 2. Filter: Hanya tampilkan yg ada realisasi (> 0)
+        let activeData = arr.filter(item => item.rawReal > 0);
 
+        // 3. Sort Descending (Tertinggi ke Terendah)
+        activeData.sort((a,b) => b.val - a.val);
+
+        // --- TOP 5 (TERTINGGI) ---
         const listTop5 = document.getElementById('list-top5');
-        if (arr.length > 0) {
-            listTop5.innerHTML = arr.slice(0, 5).map((item, i) => `
+        if (activeData.length > 0) {
+            listTop5.innerHTML = activeData.slice(0, 5).map((item, i) => `
                 <div class="rank-item">
                     <div class="rank-left">
                         <div class="rank-num best">${i+1}</div>
@@ -244,9 +256,14 @@ const app = (() => {
             listTop5.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Tidak ada data</div>';
         }
 
+        // --- BOTTOM 5 (TERENDAH - PERLU PERHATIAN) ---
+        // Ambil dari bawah array, lalu reverse agar urut dari yang paling jelek
         const listOthers = document.getElementById('list-others');
-        if(arr.length > 5) {
-            listOthers.innerHTML = arr.slice(-5).reverse().map((item, i) => `
+        if(activeData.length > 5) {
+            // Ambil 5 terbawah
+            const bottom5 = activeData.slice(-5).reverse(); 
+            
+            listOthers.innerHTML = bottom5.map((item, i) => `
                 <div class="rank-item">
                     <div class="rank-left">
                         <div class="rank-num warn">${i+1}</div>
@@ -256,7 +273,7 @@ const app = (() => {
                 </div>
             `).join('');
         } else {
-            listOthers.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data kurang untuk ditampilkan</div>';
+            listOthers.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data kurang</div>';
         }
     };
 
@@ -292,7 +309,7 @@ const app = (() => {
             options: {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { display: true, labels: { usePointStyle: true, boxWidth: 6 } }, },
+                plugins: { legend: { display: true, labels: { usePointStyle: true, boxWidth: 6 } } },
                 scales: { x: { grid: { display: false } }, y: { grid: { color: '#333' }, beginAtZero: true, ticks: { maxTicksLimit: 5, callback: (v) => v >= 1000 ? (v/1000)+' rb' : v } } }
             }
         });
@@ -323,7 +340,6 @@ const app = (() => {
             
             if (prodKey !== state.activeProduct) return;
 
-            // PERBAIKAN DI SINI: MENAMBAHKAN 'RKO' KE FILTER TARGET CHART
             if (r.BULAN >= 0) {
                 if (r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN')) mReal[r.BULAN] += r.TONASE;
                 else if (r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET') || r.JENIS.includes('RKO')) mTarget[r.BULAN] += r.TONASE;

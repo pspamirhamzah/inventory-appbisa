@@ -2,7 +2,7 @@
 <html lang="id" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dashboard APP</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -114,7 +114,7 @@
                     <div class="chart-header">
                         <div class="chart-title" style="color: var(--color-primary); display: flex; justify-content: space-between; align-items: center; width: 100%;">
                             <span>Provinsi Tertinggi</span>
-                            <i class="fas fa-arrow-trend-up" style="font-size: 1.25rem;"></i>
+                            <i class="fas fa-arrow-trend-up"></i>
                         </div>
                     </div>
                     <div id="list-top5" class="rank-list"></div>
@@ -123,25 +123,21 @@
                     <div class="chart-header">
                         <div class="chart-title" style="color: var(--color-danger); display: flex; justify-content: space-between; align-items: center; width: 100%;">
                             <span>Provinsi Terendah</span>
-                            <i class="fas fa-arrow-trend-down" style="font-size: 1.25rem;"></i>
+                            <i class="fas fa-arrow-trend-down"></i>
                         </div>
                     </div>
                     <div id="list-others" class="rank-list"></div>
                 </div>
             </div>
+
+            <div class="footer-section">
+                <footer class="footer-content">
+                    <p class="copyright">Copyright &#169; 2025 Adm Penjualan PSO & Ritel</p>
+                    <p class="design-by">Design by 00.0034</p>
+                </footer>
+            </div>
             
-            <footer class="footer-container">
-                <div class="footer-copyright">
-                    Copyright &#169; 2025 Adm Penjualan PSO & Ritel
-                </div>
-                <div class="footer-design">
-                    Design by 00.0034
-                </div>
-            </footer>
-            
-            <div class="bottom-spacer"></div>
-        </div>
-    </main>
+        </div> </main>
 
     <script src="js/script.js"></script>
 </body>

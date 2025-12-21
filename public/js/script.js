@@ -216,14 +216,19 @@ const app = (() => {
             return { name: key, val: sortVal, display: displayVal, rawReal: item.real };
         });
 
+        // Urutkan dari Besar ke Kecil (Ranking 1 di atas)
         let activeData = arr.filter(item => item.rawReal > 0);
         activeData.sort((a,b) => b.val - a.val);
 
+        // --- RENDER TOP 5 (Provinsi Tertinggi) ---
         const listTop5 = document.getElementById('list-top5');
         if (activeData.length > 0) {
             listTop5.innerHTML = activeData.slice(0, 5).map((item, i) => `
                 <div class="rank-item">
-                    <div class="rank-left"><div class="rank-num best">${i+1}</div><div class="rank-name">${item.name}</div></div>
+                    <div class="rank-left">
+                        <div class="rank-num best">${i+1}</div>
+                        <div class="rank-name">${item.name}</div>
+                    </div>
                     <div class="rank-val val-best">${item.display}</div>
                 </div>
             `).join('');
@@ -231,15 +236,25 @@ const app = (() => {
             listTop5.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Tidak ada data</div>';
         }
 
+        // --- RENDER BOTTOM 5 (Provinsi Terendah) ---
         const listOthers = document.getElementById('list-others');
         if(activeData.length > 5) {
-            const bottom5 = activeData.slice(5).reverse().slice(0, 5); 
-            listOthers.innerHTML = bottom5.map((item, i) => `
+            // Ambil 5 terakhir, lalu balik urutan (agar yang paling kecil/terendah di paling atas list ini)
+            const bottom5 = activeData.slice(-5).reverse(); 
+            
+            listOthers.innerHTML = bottom5.map((item) => {
+                // Hitung ranking asli (index + 1)
+                let realRank = activeData.indexOf(item) + 1;
+                return `
                 <div class="rank-item">
-                    <div class="rank-left"><div class="rank-num warn"><i class="fas fa-exclamation"></i></div><div class="rank-name">${item.name}</div></div>
+                    <div class="rank-left">
+                        <div class="rank-num warn" style="background:transparent; border:none; color:#ff5252; width:auto; padding-right:8px;">#${realRank}</div>
+                        <div class="rank-name">${item.name}</div>
+                    </div>
                     <div class="rank-val val-warn">${item.display}</div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         } else {
             listOthers.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data kurang</div>';
         }

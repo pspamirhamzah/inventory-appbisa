@@ -1,362 +1,460 @@
-/* =========================================================
-   SCRIPT FINAL - FILTER SINKRON (NASIONAL & PROVINSI)
-   ========================================================= */
-const API_URL = 'https://script.google.com/macros/s/AKfycbzFanoakpPL3NaMh8CqbolDF5wo9iVb6ikIKQavQh15aGJYBCj7rGQdWyE3sMC911wxdA/exec';
-const ADMIN_PASSWORD = 'pso123';
+<!-- ================================================================================== -->
+<!-- [FILE] script.js : LOGIKA APLIKASI (API, CHART, INTERAKSI)                          -->
+<!-- ================================================================================== -->
+    <script>
+        // Set Default Chart.js Config
+        Chart.defaults.color = '#b3b3b3';
+        Chart.defaults.borderColor = '#424242';
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+        Chart.defaults.font.size = 11;
 
-// GLOBAL DATA
-let rawData = [];
-let currentSector = 'SUBSIDI'; 
-let activeProduct = 'UREA'; // Variabel Global Produk yang Aktif
-let selectedYear = new Date().getFullYear();
+        const app = (() => {
+            // KONFIGURASI API
+            const API_URL = 'https://script.google.com/macros/s/AKfycbzFanoakpPL3NaMh8CqbolDF5wo9iVb6ikIKQavQh15aGJYBCj7rGQdWyE3sMC911wxdA/exec';
+            
+            let state = {
+                rawData: [],
+                sector: 'SUBSIDI',      
+                activeProduct: 'UREA',  
+                selectedYear: new Date().getFullYear(),
+                sidebarOpen: true
+            };
 
-// KAMUS BULAN
-const MONTH_MAP = {
-    'JAN': 0, 'JANUARI': 0, 'FEB': 1, 'FEBRUARI': 1, 'MAR': 2, 'MARET': 2,
-    'APR': 3, 'APRIL': 3, 'MEI': 4, 'MAY': 4, 'JUN': 5, 'JUNI': 5,
-    'JUL': 6, 'JULI': 6, 'AGU': 7, 'AGUSTUS': 7, 'AUG': 7,
-    'SEP': 8, 'SEPTEMBER': 8, 'OKT': 9, 'OKTOBER': 9,
-    'NOV': 10, 'NOVEMBER': 10, 'DES': 11, 'DESEMBER': 11
-};
-const CHART_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            let chartNasional = null;
+            let chartProvinsi = null;
 
-// CHART INSTANCES
-let chartNasionalInstance, chartProvInstance, sparkUreaInstance, sparkNpkInstance;
+            // UTILS
+            const parseIndoNumber = (str) => {
+                if(typeof str === 'number') return str;
+                if(!str) return 0;
+                let clean = String(str).replace(/\./g, '').replace(/,/g, '.');
+                return parseFloat(clean) || 0;
+            };
 
-// 1. INIT
-window.onload = function() {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(savedTheme);
-    loadData();
-};
+            const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(num);
 
-// 2. LOAD DATA
-function loadData() {
-    const loader = document.getElementById('loader');
-    if(loader) loader.style.display = 'flex';
-
-    fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-        if (!Array.isArray(data)) { console.error("Data Error"); return; }
-        
-        processData(data);      // 1. Bersihkan Data
-        populateProvDropdown(); // 2. Isi Dropdown
-        updateDashboard();      // 3. Render Dashboard
-        
-        if(loader) loader.style.display = 'none';
-    })
-    .catch(err => {
-        console.error(err);
-        if(loader) loader.style.display = 'none';
-    });
-}
-
-// 3. PROCESS DATA
-function processData(data) {
-    rawData = data.map(r => {
-        let valStr = String(r['TONASE']).replace(/\./g, '').replace(/,/g, '.');
-        let val = parseFloat(valStr) || 0;
-        let year = parseInt(r['TAHUN']) || new Date().getFullYear();
-        let txtBulan = String(r['BULAN'] || '').toUpperCase().trim();
-        let monthIdx = MONTH_MAP[txtBulan] !== undefined ? MONTH_MAP[txtBulan] : -1;
-
-        return {
-            ...r,
-            TAHUN: year,
-            BULAN_IDX: monthIdx,
-            SEKTOR_RAW: String(r['SEKTOR'] || '').toUpperCase().trim(),
-            PRODUK_RAW: String(r['PRODUK'] || '').toUpperCase().trim(),
-            JENIS_RAW: String(r['JENIS'] || '').toUpperCase().trim(),
-            PROVINSI_RAW: String(r['PROVINSI'] || '').toUpperCase().trim(),
-            PROVINSI_CLEAN: toTitleCase(String(r['PROVINSI'] || '')),
-            TONASE: val
-        };
-    });
-
-    // Auto Switch Tahun
-    const hasData = rawData.some(r => r.TAHUN === selectedYear);
-    if (!hasData && rawData.length > 0) {
-        const uniqueYears = [...new Set(rawData.map(r => r.TAHUN))].sort((a,b) => b-a);
-        if(uniqueYears.length > 0) {
-            selectedYear = uniqueYears[0];
-            updateEl('year-label', `Data Tahun: ${selectedYear}`);
-        }
-    }
-}
-
-// 4. UPDATE DASHBOARD UTAMA
-function updateDashboard() {
-    if (rawData.length === 0) return;
-
-    let stats = {
-        UREA: { real: 0, rkap: 0, realMonthly: Array(12).fill(0), rkapMonthly: Array(12).fill(0) },
-        NPK:  { real: 0, rkap: 0, realMonthly: Array(12).fill(0), rkapMonthly: Array(12).fill(0) }
-    };
-    let provStats = {}; 
-
-    rawData.forEach(r => {
-        // Filter Global
-        if (r.TAHUN !== selectedYear) return;
-        let isSectorMatch = (currentSector === 'SUBSIDI') ? 
-            (r.SEKTOR_RAW.includes('SUBSIDI') && !r.SEKTOR_RAW.includes('NON')) : 
-            (r.SEKTOR_RAW.includes('RETAIL') || r.SEKTOR_RAW.includes('NON'));
-        if (!isSectorMatch) return;
-
-        const isReal = r.JENIS_RAW.includes('REALISASI') || r.JENIS_RAW.includes('PENJUALAN');
-        const isTarget = r.JENIS_RAW.includes('RKAP') || r.JENIS_RAW.includes('TARGET');
-        
-        let pKey = '';
-        if (r.PRODUK_RAW.includes('UREA') || r.PRODUK_RAW.includes('NITREA')) pKey = 'UREA';
-        else if (r.PRODUK_RAW.includes('NPK') || r.PRODUK_RAW.includes('PHONSKA')) pKey = 'NPK';
-
-        if (!pKey) return;
-
-        // Init Provinsi Stats
-        let prov = r.PROVINSI_RAW || 'LAINNYA';
-        if (!provStats[prov]) provStats[prov] = { real: 0, rkap: 0 };
-
-        // Hitung Aggregasi
-        if (isReal) {
-            stats[pKey].real += r.TONASE;
-            provStats[prov].real += r.TONASE;
-            if (r.BULAN_IDX >= 0) stats[pKey].realMonthly[r.BULAN_IDX] += r.TONASE;
-        } 
-        else if (isTarget) {
-            stats[pKey].rkap += r.TONASE;
-            provStats[prov].rkap += r.TONASE;
-            if (r.BULAN_IDX >= 0) stats[pKey].rkapMonthly[r.BULAN_IDX] += r.TONASE;
-        }
-    });
-
-    // Update Kartu
-    updateCard('urea', stats.UREA);
-    updateCard('npk', stats.NPK);
-
-    // Update Sparklines
-    drawSparkline('sparkUrea', stats.UREA.realMonthly, 'var(--color-urea)', sparkUreaInstance, (inst) => sparkUreaInstance = inst);
-    drawSparkline('sparkNpk', stats.NPK.realMonthly, 'var(--color-npk)', sparkNpkInstance, (inst) => sparkNpkInstance = inst);
-
-    // Update Rankings
-    renderRankings(provStats);
-
-    // Update Grafik Nasional (Sesuai tombol aktif)
-    renderNasionalChart(stats);
-    
-    // Update Grafik Provinsi (Sesuai tombol aktif & dropdown)
-    renderProvChart();
-}
-
-// 5. CHART NASIONAL (KIRI)
-function renderNasionalChart(stats) {
-    const ctx = document.getElementById('chartNasional');
-    if (!ctx) return;
-    if (chartNasionalInstance) chartNasionalInstance.destroy();
-
-    // Data sesuai produk yang AKTIF
-    const d = (activeProduct === 'UREA') ? stats.UREA : stats.NPK;
-    const colorMain = activeProduct === 'UREA' ? '#F7DA19' : '#055AA1'; 
-
-    chartNasionalInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: CHART_LABELS,
-            datasets: [
-                { label: 'Realisasi', data: d.realMonthly, borderColor: colorMain, backgroundColor: colorMain+'20', fill: true, tension: 0.4 },
-                { label: 'Target', data: d.rkapMonthly, borderColor: '#888', borderDash: [5,5], fill: false, tension: 0.4 }
-            ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: true } },
-            scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: '#333' } } }
-        }
-    });
-}
-
-// 6. CHART PROVINSI (KANAN) - LOGIKA BARU
-function populateProvDropdown() {
-    const dropdown = document.getElementById('prov-select');
-    if (!dropdown) return;
-    dropdown.innerHTML = '<option value="">-- Pilih Provinsi --</option>';
-    const uniqueProvs = [...new Set(rawData.map(r => r.PROVINSI_CLEAN))].sort();
-    uniqueProvs.forEach(prov => {
-        if(prov) {
-            const opt = document.createElement('option');
-            opt.value = prov;
-            opt.innerText = prov;
-            dropdown.appendChild(opt);
-        }
-    });
-}
-
-function renderProvChart() {
-    const selectedProv = document.getElementById('prov-select').value;
-    const ctx = document.getElementById('chartProv');
-    if (!ctx) return;
-    if (chartProvInstance) chartProvInstance.destroy();
-
-    if (!selectedProv) return; // Jika kosong, chart bersih
-
-    // Siapkan Wadah Data untuk Provinsi Terpilih
-    let dataReal = Array(12).fill(0);
-    let dataTarget = Array(12).fill(0);
-    let dataStok = Array(12).fill(0);
-
-    rawData.forEach(r => {
-        // Filter Global
-        if (r.TAHUN !== selectedYear) return;
-        
-        // Filter Sektor
-        let isSectorMatch = (currentSector === 'SUBSIDI') ? 
-            (r.SEKTOR_RAW.includes('SUBSIDI') && !r.SEKTOR_RAW.includes('NON')) : 
-            (r.SEKTOR_RAW.includes('RETAIL') || r.SEKTOR_RAW.includes('NON'));
-        if (!isSectorMatch) return;
-
-        // Filter PROVINSI
-        if (r.PROVINSI_CLEAN !== selectedProv) return;
-
-        // Filter PRODUK (Sesuai Tombol yang Aktif: UREA atau NPK)
-        let isProductMatch = false;
-        if (activeProduct === 'UREA') isProductMatch = r.PRODUK_RAW.includes('UREA') || r.PRODUK_RAW.includes('NITREA');
-        else isProductMatch = r.PRODUK_RAW.includes('NPK') || r.PRODUK_RAW.includes('PHONSKA');
-        
-        if (!isProductMatch) return;
-
-        // Masukkan Data ke Array
-        if (r.BULAN_IDX >= 0 && r.BULAN_IDX < 12) {
-            if (r.JENIS_RAW.includes('REALISASI') || r.JENIS_RAW.includes('PENJUALAN')) {
-                dataReal[r.BULAN_IDX] += r.TONASE;
-            } else if (r.JENIS_RAW.includes('RKAP') || r.JENIS_RAW.includes('TARGET')) {
-                dataTarget[r.BULAN_IDX] += r.TONASE;
-            } else if (r.JENIS_RAW.includes('STOK') || r.JENIS_RAW.includes('STOCK')) {
-                dataStok[r.BULAN_IDX] += r.TONASE;
+            const normalizeMonth = (str) => {
+                const map = {'JAN':0, 'JANUARI':0, 'FEB':1, 'FEBRUARI':1, 'MAR':2, 'MARET':2, 'APR':3, 'APRIL':3, 'MEI':4, 'MAY':4, 'JUN':5, 'JUNI':5, 'JUL':6, 'JULI':6, 'AGU':7, 'AGUSTUS':7, 'SEP':8, 'SEPTEMBER':8, 'OKT':9, 'OKTOBER':9, 'NOV':10, 'NOVEMBER':10, 'DES':11, 'DESEMBER':11};
+                return map[String(str).toUpperCase().trim()] ?? -1;
+            };
+            
+            const toTitleCase = (str) => str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+            
+            const hexToRgbA = (hex, alpha) => {
+                let c; if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){ c= hex.substring(1).split(''); if(c.length== 3){ c= [c[0], c[0], c[1], c[1], c[2], c[2]]; } c= '0x'+c.join(''); return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')'; } return hex;
             }
-        }
-    });
 
-    // Tentukan Warna berdasarkan Produk Aktif
-    const colorMain = activeProduct === 'UREA' ? '#F7DA19' : '#055AA1';
-    const colorStock = '#2ecc71'; // Hijau untuk stok
+            // FUNCTION: Membuat Icon Lingkaran Putus-Putus (Dashed Circle) untuk Target
+            const createDashedCircle = (color) => {
+                const size = 12; // Ukuran Canvas
+                const r = 4;     // Jari-jari lingkaran
+                const c = document.createElement('canvas');
+                c.width = size;
+                c.height = size;
+                const ctx = c.getContext('2d');
+                ctx.beginPath();
+                ctx.setLineDash([2, 2]); // Pola Putus-putus
+                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = color;
+                ctx.arc(size/2, size/2, r, 0, 2 * Math.PI);
+                ctx.stroke();
+                return c;
+            };
 
-    chartProvInstance = new Chart(ctx, {
-        type: 'bar', // Gunakan tipe Bar agar Stok terlihat jelas
-        data: {
-            labels: CHART_LABELS,
-            datasets: [
-                {
-                    label: 'Realisasi',
-                    data: dataReal,
-                    type: 'line', // Garis Solid
-                    borderColor: colorMain,
-                    backgroundColor: colorMain + '20',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: true,
-                    order: 1
-                },
-                {
-                    label: 'Target',
-                    data: dataTarget,
-                    type: 'line', // Garis Putus-putus
-                    borderColor: '#888',
-                    borderDash: [5, 5],
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: false,
-                    pointRadius: 0,
-                    order: 0
-                },
-                {
-                    label: 'Stok',
-                    data: dataStok,
-                    type: 'bar', // Batang
-                    backgroundColor: colorStock + '80', // Transparan
-                    barPercentage: 0.5,
-                    order: 2
+            // INITIALIZATION
+            const init = () => { fetchData(); checkScreenSize(); };
+
+            const checkScreenSize = () => {
+                if(window.innerWidth <= 768) { state.sidebarOpen = false; } 
+                else { state.sidebarOpen = true; }
+                renderSidebar();
+            };
+
+            const renderSidebar = () => {
+                const sb = document.getElementById('sidebar');
+                const main = document.getElementById('main-content');
+                if (state.sidebarOpen) {
+                    sb.classList.remove('closed'); main.classList.remove('closed');
+                    if(window.innerWidth <= 768) sb.classList.add('show'); // Mobile
+                } else {
+                    sb.classList.add('closed'); main.classList.add('closed');
+                    if(window.innerWidth <= 768) sb.classList.remove('show');
                 }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: '#333' } } }
-        }
-    });
-}
+            };
 
-// 7. UI ACTION (TOMBOL FILTER)
-// ==========================================
-function setGlobalProduct(product) {
-    activeProduct = product; // Update Variabel Global
-    
-    // Update Tampilan Tombol
-    updateEl('btn-chart-urea', '', el => el.className = product === 'UREA' ? 'btn-toggle active' : 'btn-toggle');
-    updateEl('btn-chart-npk', '', el => el.className = product === 'NPK' ? 'btn-toggle active' : 'btn-toggle');
-    
-    // Update KEDUA Chart (Nasional & Provinsi)
-    // Karena updateDashboard() memanggil keduanya, kita panggil itu saja biar aman
-    updateDashboard(); 
-}
+            const fetchData = async () => {
+                document.getElementById('loader').style.display = 'flex';
+                try {
+                    const res = await fetch(API_URL);
+                    const data = await res.json();
+                    processData(data);
+                } catch (err) {
+                    console.error("Error:", err);
+                    alert("Gagal koneksi data.");
+                } finally {
+                    document.getElementById('loader').style.display = 'none';
+                }
+            };
 
-function setSector(s) {
-    currentSector = s;
-    updateEl('nav-subsidi', '', el => el.className = s === 'SUBSIDI' ? 'nav-item active' : 'nav-item');
-    updateEl('nav-retail', '', el => el.className = s === 'RETAIL' ? 'nav-item active' : 'nav-item');
-    updateEl('page-heading', s === 'SUBSIDI' ? 'Subsidi' : 'Retail');
-    updateDashboard();
-    if(window.innerWidth <= 768) toggleSidebar();
-}
+            const processData = (data) => {
+                state.rawData = data.map(row => ({
+                    TAHUN: parseInt(row.TAHUN),
+                    BULAN: normalizeMonth(row.BULAN),
+                    SEKTOR: String(row.SEKTOR || '').toUpperCase(),
+                    PRODUK: String(row.PRODUK || '').toUpperCase(),
+                    JENIS: String(row.JENIS || '').toUpperCase(),
+                    PROVINSI: toTitleCase(String(row.PROVINSI || '')),
+                    TONASE: parseIndoNumber(row.TONASE)
+                }));
 
-// 8. HELPER LAINNYA (SAMA SEPERTI SEBELUMNYA)
-function updateCard(type, data) {
-    const real = data.real;
-    const rkap = data.rkap;
-    const pct = rkap > 0 ? (real / rkap * 100) : 0;
-    const sisa = rkap - real;
-    updateEl(`val-${type}`, formatNumber(real));
-    updateEl(`txt-${type}-rkap`, formatNumber(rkap));
-    updateEl(`kpi-${type}-pct`, pct.toFixed(1) + '%');
-    updateEl(`txt-${type}-sisa`, formatNumber(sisa));
-    const progEl = document.getElementById(`prog-${type}`);
-    if(progEl) progEl.style.width = Math.min(pct, 100) + '%';
-}
+                // Populate Year Select
+                const years = [...new Set(state.rawData.map(r => r.TAHUN))].sort((a,b) => b-a);
+                const yearSel = document.getElementById('year-select');
+                yearSel.innerHTML = '';
+                years.forEach(y => {
+                    let opt = document.createElement('option');
+                    opt.value = y; opt.text = y;
+                    if(y === state.selectedYear) opt.selected = true;
+                    yearSel.appendChild(opt);
+                });
+                if(!years.includes(state.selectedYear) && years.length > 0) state.selectedYear = years[0];
 
-function renderRankings(stats) {
-    const listBest = document.getElementById('list-best');
-    const listWarn = document.getElementById('list-warn');
-    if (!listBest) return;
-    let rankArray = Object.keys(stats).map(prov => ({ name: toTitleCase(prov), real: stats[prov].real }));
-    rankArray.sort((a,b) => b.real - a.real);
-    listBest.innerHTML = rankArray.slice(0, 5).map((item, i) => `<div class="rank-item" style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333; font-size:13px;"><div><span style="color:#F7DA19; margin-right:8px;">${i+1}</span> ${item.name}</div><div style="font-weight:bold;">${formatNumber(item.real)}</div></div>`).join('');
-    if(rankArray.length > 5) {
-        listWarn.innerHTML = rankArray.slice(-5).reverse().map((item, i) => `<div class="rank-item" style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333; font-size:13px;"><div><span style="color:red; margin-right:8px;">${i+1}</span> ${item.name}</div><div style="font-weight:bold;">${formatNumber(item.real)}</div></div>`).join('');
-    } else { listWarn.innerHTML = '<div style="padding:10px; color:grey; font-size:12px">Data kurang</div>'; }
-}
+                updateDashboard(); 
+            };
 
-function drawSparkline(id, data, colorVar, instance, setInstance) {
-    const ctx = document.getElementById(id);
-    if (!ctx) return;
-    const color = getComputedStyle(document.body).getPropertyValue(colorVar.replace('var(','').replace(')','')).trim() || '#fff';
-    if (instance) instance.destroy();
-    const chart = new Chart(ctx, {
-        type: 'line',
-        data: { labels: CHART_LABELS, datasets: [{ data: data, borderColor: color, borderWidth: 2, fill: false, pointRadius: 0 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display: false}, tooltip: {enabled: false} }, scales: { x: {display:false}, y: {display:false} } }
-    });
-    setInstance(chart);
-}
+            const populateProvDropdown = () => {
+                const s = document.getElementById('dropdown-provinsi');
+                const prevVal = s.value; 
+                const validProvs = new Set();
 
-function updateEl(id, val, cb) {
-    const el = document.getElementById(id);
-    if(el) { if(val !== '') el.innerText = val; if(cb) cb(el); }
-}
-function formatNumber(n) { return new Intl.NumberFormat('id-ID').format(n || 0); }
-function toTitleCase(s) { return s.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.substr(1).toLowerCase()); }
-function toggleTheme() { setTheme(localStorage.getItem('theme') === 'dark' ? 'light' : 'dark'); }
-function setTheme(t) { document.documentElement.setAttribute('data-theme', t); localStorage.setItem('theme', t); }
-function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.querySelector('.overlay').classList.toggle('active'); }
-function openLoginModal() { alert("Login Placeholder"); }
-function openAdminPanel() { }
-function closeAllModals() { document.querySelector('.backdrop').classList.remove('open'); }
+                state.rawData.forEach(r => {
+                    if (r.TAHUN !== state.selectedYear) return;
+                    let isSectorMatch = (state.sector === 'SUBSIDI') ? 
+                        (r.SEKTOR.includes('SUBSIDI')) : (r.SEKTOR.includes('RETAIL'));
+                    if (!isSectorMatch) return;
+
+                    let prodKey = '';
+                    if (r.PRODUK.includes('UREA') || r.PRODUK.includes('NITREA')) prodKey = 'UREA';
+                    else if (r.PRODUK.includes('NPK') || r.PRODUK.includes('PHONSKA')) prodKey = 'NPK';
+                    
+                    if (prodKey !== state.activeProduct) return;
+
+                    if (r.PROVINSI && r.PROVINSI !== 'LAINNYA') validProvs.add(r.PROVINSI);
+                });
+
+                const sortedProvs = [...validProvs].sort();
+                s.innerHTML = '';
+                
+                if (sortedProvs.length > 0) {
+                    sortedProvs.forEach(prov => {
+                        let opt = document.createElement('option');
+                        opt.value = prov; opt.innerText = prov;
+                        s.appendChild(opt);
+                    });
+                    if (prevVal && sortedProvs.includes(prevVal)) { s.value = prevVal; } 
+                    else { s.value = sortedProvs[0]; }
+                } else {
+                    let opt = document.createElement('option');
+                    opt.value = ""; opt.innerText = "Tidak ada data"; s.appendChild(opt);
+                }
+            };
+
+            const updateDashboard = () => {
+                const { rawData, selectedYear, sector } = state;
+                let stats = {
+                    curr: { UREA: {real:0, target:0}, NPK: {real:0, target:0} },
+                    prev: { UREA: {real:0}, NPK: {real:0} },
+                    nasional: { 
+                        UREA: {real:Array(12).fill(0), target:Array(12).fill(0), stock:Array(12).fill(0)}, 
+                        NPK: {real:Array(12).fill(0), target:Array(12).fill(0), stock:Array(12).fill(0)} 
+                    },
+                    provinsi: {} 
+                };
+
+                populateProvDropdown();
+
+                rawData.forEach(r => {
+                    let isSectorMatch = (sector === 'SUBSIDI') ? 
+                        (r.SEKTOR.includes('SUBSIDI')) : (r.SEKTOR.includes('RETAIL')); 
+                    if (!isSectorMatch) return;
+
+                    let prodKey = '';
+                    if (r.PRODUK.includes('UREA') || r.PRODUK.includes('NITREA')) prodKey = 'UREA';
+                    else if (r.PRODUK.includes('NPK') || r.PRODUK.includes('PHONSKA')) prodKey = 'NPK';
+                    if (!prodKey) return;
+
+                    let isReal = r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN');
+                    let isTarget = r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET');
+                    let isStock = r.JENIS.includes('STOK') || r.JENIS.includes('STOCK');
+
+                    if (r.TAHUN === selectedYear) {
+                        if (isReal) {
+                            stats.curr[prodKey].real += r.TONASE;
+                            if(r.BULAN >= 0) stats.nasional[prodKey].real[r.BULAN] += r.TONASE;
+                            if (!stats.provinsi[r.PROVINSI]) stats.provinsi[r.PROVINSI] = 0;
+                            stats.provinsi[r.PROVINSI] += r.TONASE;
+                        } 
+                        else if (isTarget) {
+                            stats.curr[prodKey].target += r.TONASE;
+                            if(r.BULAN >= 0) stats.nasional[prodKey].target[r.BULAN] += r.TONASE;
+                        }
+                        else if (isStock) {
+                            if(r.BULAN >= 0) stats.nasional[prodKey].stock[r.BULAN] += r.TONASE;
+                        }
+                    }
+                    if (r.TAHUN === (selectedYear - 1) && isReal) stats.prev[prodKey].real += r.TONASE;
+                });
+
+                // Reset Judul agar tetap putih
+                document.getElementById('prov-chart-title').innerText = 'Realisasi Provinsi';
+                
+                renderKPI(stats);
+                renderRankings(stats.provinsi);
+                renderNasionalChart(stats.nasional);
+                renderProvChart(); 
+            };
+
+            const renderKPI = (stats) => {
+                const updateCard = (key, data) => {
+                    const real = data.curr[key].real;
+                    const target = data.curr[key].target;
+                    const prev = data.prev[key].real;
+                    const pct = target > 0 ? (real/target*100) : 0;
+                    
+                    document.getElementById(`val-${key.toLowerCase()}-real`).innerText = formatNumber(real);
+                    document.getElementById(`val-${key.toLowerCase()}-target`).innerText = formatNumber(target);
+                    document.getElementById(`val-${key.toLowerCase()}-pct`).innerText = pct.toFixed(1) + '%';
+                    document.getElementById(`prog-${key.toLowerCase()}`).style.width = Math.min(pct, 100) + '%';
+
+                    let growthVal = 0;
+                    let isUp = true;
+                    if(prev > 0) {
+                        growthVal = ((real - prev) / prev) * 100;
+                        isUp = growthVal >= 0;
+                    } else if (real > 0) growthVal = 100;
+
+                    const badge = document.getElementById(`growth-${key.toLowerCase()}-badge`);
+                    document.getElementById(`growth-${key.toLowerCase()}-val`).innerText = growthVal.toFixed(1) + '%';
+                    badge.className = `growth-badge ${isUp ? 'growth-up' : 'growth-down'}`;
+                    badge.innerHTML = `<i class="fas fa-arrow-${isUp ? 'up' : 'down'}"></i> ${Math.abs(growthVal).toFixed(1)}%`;
+                };
+                updateCard('UREA', stats);
+                updateCard('NPK', stats);
+            };
+
+            // RENDER CHARTS
+            const renderNasionalChart = (nasStats) => {
+                const ctx = document.getElementById('chartNasional').getContext('2d');
+                if(chartNasional) chartNasional.destroy();
+
+                const isUrea = state.activeProduct === 'UREA';
+                const data = isUrea ? nasStats.UREA : nasStats.NPK;
+                const color = isUrea ? '#fbbf24' : '#38bdf8'; 
+                
+                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, hexToRgbA(color, 0.4));
+                gradient.addColorStop(1, hexToRgbA(color, 0.0));
+
+                const targetIcon = createDashedCircle('#999'); 
+
+                chartNasional = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
+                        datasets: [
+                            {
+                                label: 'Realisasi', data: data.real, borderColor: color, backgroundColor: gradient,
+                                fill: true, tension: 0.4, borderWidth: 3, 
+                                pointRadius: 4, pointHoverRadius: 6, pointStyle: 'circle' 
+                            },
+                            {
+                                label: 'Target', data: data.target, borderColor: '#666', borderDash: [6, 6],
+                                borderWidth: 2, fill: false, tension: 0.4, 
+                                pointRadius: 0, pointStyle: targetIcon // Custom Dashed Circle
+                            },
+                            {
+                                label: 'Stok', data: data.stock, borderColor: '#a8a29e', borderDash: [], 
+                                showLine: true, borderWidth: 2, 
+                                pointRadius: 0, pointHoverRadius: 6, 
+                                pointStyle: 'circle', // Solid Circle Legend (But No Pointer on Line)
+                                fill: false, tension: 0.3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: { 
+                            legend: { display: true, labels: { usePointStyle: true, boxWidth: 6 } }, // Small Legend Icon
+                            tooltip: { 
+                                backgroundColor: 'rgba(33, 33, 33, 0.95)',
+                                titleColor: '#ececec', bodyColor: '#b3b3b3',
+                                borderColor: '#424242', borderWidth: 1,
+                                displayColors: false, 
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + formatNumber(context.raw);
+                                    }
+                                }
+                            }
+                        },
+                        scales: { 
+                            x: { grid: { display: false } }, 
+                            y: { 
+                                grid: { color: '#333' }, beginAtZero: true, 
+                                ticks: { 
+                                    maxTicksLimit: 5,
+                                    callback: function(value) { 
+                                        if (value === 0) return null;
+                                        if (value >= 1000) return (value / 1000) + ' rb';
+                                        return value;
+                                    }
+                                } 
+                            } 
+                        }
+                    }
+                });
+            };
+
+            const renderProvChart = () => {
+                const provName = document.getElementById('dropdown-provinsi').value;
+                const placeholder = document.getElementById('prov-placeholder');
+                const ctx = document.getElementById('chartProvinsi').getContext('2d');
+                
+                if (!provName) {
+                    placeholder.style.display = 'flex';
+                    if(chartProvinsi) chartProvinsi.clear();
+                    return;
+                }
+                placeholder.style.display = 'none';
+
+                let mReal = Array(12).fill(0);
+                let mTarget = Array(12).fill(0);
+                let mStock = Array(12).fill(0);
+
+                state.rawData.forEach(r => {
+                    if (r.TAHUN !== state.selectedYear || r.PROVINSI !== provName) return;
+                    let isSectorMatch = (state.sector === 'SUBSIDI') ? r.SEKTOR.includes('SUBSIDI') : r.SEKTOR.includes('RETAIL');
+                    if (!isSectorMatch) return;
+
+                    let prodKey = '';
+                    if (r.PRODUK.includes('UREA') || r.PRODUK.includes('NITREA')) prodKey = 'UREA';
+                    else if (r.PRODUK.includes('NPK') || r.PRODUK.includes('PHONSKA')) prodKey = 'NPK';
+                    
+                    if (prodKey !== state.activeProduct) return;
+
+                    if (r.BULAN >= 0) {
+                        if (r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN')) mReal[r.BULAN] += r.TONASE;
+                        else if (r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET')) mTarget[r.BULAN] += r.TONASE;
+                        else if (r.JENIS.includes('STOK') || r.JENIS.includes('STOCK')) mStock[r.BULAN] += r.TONASE;
+                    }
+                });
+
+                if(chartProvinsi) chartProvinsi.destroy();
+                const colorMain = state.activeProduct === 'UREA' ? '#fbbf24' : '#38bdf8';
+                
+                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, hexToRgbA(colorMain, 0.4));
+                gradient.addColorStop(1, hexToRgbA(colorMain, 0.0));
+
+                const targetIcon = createDashedCircle('#999');
+
+                chartProvinsi = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
+                        datasets: [
+                            {
+                                label: 'Realisasi', data: mReal, borderColor: colorMain, backgroundColor: gradient,
+                                fill: true, tension: 0.3, borderWidth: 2, 
+                                pointRadius: 4, pointHoverRadius: 6, pointStyle: 'circle'
+                            },
+                            {
+                                label: 'Target', data: mTarget, borderColor: '#999', borderDash: [4, 4], 
+                                borderWidth: 1, pointRadius: 0, tension: 0.3, 
+                                pointStyle: targetIcon
+                            },
+                            {
+                                label: 'Stok', data: mStock, borderColor: '#a8a29e', borderDash: [], 
+                                showLine: true, borderWidth: 2, 
+                                pointRadius: 0, pointHoverRadius: 6, 
+                                pointStyle: 'circle', 
+                                fill: false, tension: 0.3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: { 
+                            legend: { display: true, labels: { usePointStyle: true, boxWidth: 6 } },
+                            tooltip: { 
+                                backgroundColor: 'rgba(33, 33, 33, 0.95)',
+                                titleColor: '#ececec', bodyColor: '#b3b3b3',
+                                borderColor: '#424242', borderWidth: 1,
+                                displayColors: false, 
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + formatNumber(context.raw);
+                                    }
+                                }
+                            }
+                        },
+                        scales: { x: { grid: { display: false } }, y: { grid: { color: '#333' }, beginAtZero: true, ticks: { maxTicksLimit: 5, callback: function(value) { if (value === 0) return null; if (value >= 1000) return (value / 1000) + ' rb'; return value; } } } }
+                    }
+                });
+            };
+
+            const renderRankings = (provStats) => {
+                let arr = Object.keys(provStats).map(key => ({ name: key, val: provStats[key] }));
+                arr.sort((a,b) => b.val - a.val);
+
+                const top5 = arr.slice(0, 5);
+                document.getElementById('list-top5').innerHTML = top5.map((item, i) => `
+                    <div class="rank-item">
+                        <div class="rank-left">
+                            <div class="rank-num best">${i+1}</div>
+                            <div class="rank-name">${item.name}</div>
+                        </div>
+                        <div class="rank-val val-best">${formatNumber(item.val)}</div>
+                    </div>
+                `).join('');
+
+                const others = arr.slice(5).filter(x => x.val > 0).reverse();
+                const listOthers = document.getElementById('list-others');
+                if(others.length === 0) listOthers.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data Kosong / Semua Masuk Top 5</div>';
+                else listOthers.innerHTML = others.map((item, i) => `
+                    <div class="rank-item">
+                        <div class="rank-left">
+                            <div class="rank-num warn">${i+1}</div>
+                            <div class="rank-name">${item.name}</div>
+                        </div>
+                        <div class="rank-val val-warn">${formatNumber(item.val)}</div>
+                    </div>
+                `).join('');
+            };
+
+            return {
+                init,
+                toggleSidebar: () => { state.sidebarOpen = !state.sidebarOpen; renderSidebar(); },
+                setSector: (sec) => {
+                    state.sector = sec;
+                    document.getElementById('nav-subsidi').classList.toggle('active', sec === 'SUBSIDI');
+                    document.getElementById('nav-retail').classList.toggle('active', sec === 'RETAIL');
+                    document.getElementById('page-title-text').innerText = sec === 'SUBSIDI' ? 'Subsidi' : 'Retail';
+                    updateDashboard();
+                    if(window.innerWidth <= 768) { state.sidebarOpen = false; renderSidebar(); }
+                },
+                changeYear: (val) => { state.selectedYear = parseInt(val); updateDashboard(); },
+                setChartProduct: (prod) => {
+                    state.activeProduct = prod;
+                    document.getElementById('btn-nas-urea').classList.toggle('active', prod === 'UREA');
+                    document.getElementById('btn-nas-npk').classList.toggle('active', prod === 'NPK');
+                    updateDashboard();
+                },
+                renderProvChart
+            };
+        })();
+
+        window.onload = app.init;
+    </script>

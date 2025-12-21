@@ -4,7 +4,7 @@ Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
 Chart.defaults.font.size = 11;
 
 const app = (() => {
-    // ⚠️ PASTIKAN URL INI BENAR ⚠️
+    // ⚠️ PASTIKAN URL WEB APP ANDA BENAR DI SINI ⚠️
     const API_URL = 'https://script.google.com/macros/s/AKfycbzFanoakpPL3NaMh8CqbolDF5wo9iVb6ikIKQavQh15aGJYBCj7rGQdWyE3sMC911wxdA/exec';
     
     let state = {
@@ -18,6 +18,7 @@ const app = (() => {
     let chartNasional = null;
     let chartProvinsi = null;
 
+    // --- UTILS ---
     const parseIndoNumber = (str) => {
         if(typeof str === 'number') return str;
         if(!str) return 0;
@@ -27,23 +28,26 @@ const app = (() => {
 
     const formatNumber = (num) => new Intl.NumberFormat('id-ID').format(num);
 
-    // CUSTOM DASHED CIRCLE ICON (Untuk Target Legend Chartjs)
     const createDashedCircle = (color) => {
-        const size = 12; 
-        const r = 4.5;   
-        const c = document.createElement('canvas');
-        c.width = size;
-        c.height = size;
-        const ctx = c.getContext('2d');
-        ctx.beginPath();
-        ctx.setLineDash([2, 2]); 
-        ctx.lineWidth = 1.5;
-        ctx.strokeStyle = color;
-        ctx.arc(size/2, size/2, r, 0, 2 * Math.PI);
-        ctx.stroke();
+        const size = 12; const r = 4.5; const c = document.createElement('canvas');
+        c.width = size; c.height = size; const ctx = c.getContext('2d');
+        ctx.beginPath(); ctx.setLineDash([2, 2]); ctx.lineWidth = 1.5;
+        ctx.strokeStyle = color; ctx.arc(size/2, size/2, r, 0, 2 * Math.PI); ctx.stroke();
         return c;
     };
 
+    const normalizeMonth = (str) => {
+        const map = {'JAN':0, 'JANUARI':0, 'FEB':1, 'FEBRUARI':1, 'MAR':2, 'MARET':2, 'APR':3, 'APRIL':3, 'MEI':4, 'MAY':4, 'JUN':5, 'JUNI':5, 'JUL':6, 'JULI':6, 'AGU':7, 'AGUSTUS':7, 'SEP':8, 'SEPTEMBER':8, 'OKT':9, 'OKTOBER':9, 'NOV':10, 'NOVEMBER':10, 'DES':11, 'DESEMBER':11};
+        return map[String(str).toUpperCase().trim()] ?? -1;
+    };
+    
+    const toTitleCase = (str) => str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+    
+    const hexToRgbA = (hex, alpha) => {
+        let c; if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){ c= hex.substring(1).split(''); if(c.length== 3){ c= [c[0], c[0], c[1], c[1], c[2], c[2]]; } c= '0x'+c.join(''); return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')'; } return hex;
+    }
+
+    // --- INIT & LOAD ---
     const init = () => { fetchData(); checkScreenSize(); };
 
     const checkScreenSize = () => {
@@ -60,7 +64,7 @@ const app = (() => {
             processData(data);
         } catch (err) {
             console.error("Error:", err);
-            alert("Gagal koneksi data.");
+            // alert("Gagal koneksi data."); 
         } finally {
             document.getElementById('loader').style.display = 'none';
         }
@@ -77,6 +81,7 @@ const app = (() => {
             TONASE: parseIndoNumber(row.TONASE)
         }));
 
+        // Setup Filter Tahun
         const years = [...new Set(state.rawData.map(r => r.TAHUN))].sort((a,b) => b-a);
         const yearSel = document.getElementById('year-select');
         yearSel.innerHTML = '';
@@ -91,50 +96,48 @@ const app = (() => {
         updateDashboard(); 
     };
 
+    // --- DROPDOWN LOGIC ---
     const populateProvDropdown = (provKeys) => {
         const s = document.getElementById('dropdown-provinsi');
         const prevVal = s.value; 
         s.innerHTML = '';
 
-        if(!provKeys || provKeys.length === 0) {
-            let opt = document.createElement('option');
-            opt.value = ""; opt.innerText = "Tidak ada data";
-            s.appendChild(opt);
-            return;
-        }
+        const optDefault = document.createElement('option');
+        optDefault.value = ""; optDefault.innerText = "-- Pilih Provinsi --";
+        s.appendChild(optDefault);
 
-        // Filter & Sort
+        if(!provKeys || provKeys.length === 0) return;
+
         const sortedProvs = provKeys.filter(p => p !== 'LAINNYA').sort();
-        
-        if (sortedProvs.length > 0) {
-            sortedProvs.forEach(prov => {
-                let opt = document.createElement('option');
-                opt.value = prov; opt.innerText = prov;
-                s.appendChild(opt);
-            });
-            if (prevVal && sortedProvs.includes(prevVal)) { s.value = prevVal; } 
-            else { s.value = sortedProvs[0]; }
-        } else {
+        sortedProvs.forEach(prov => {
             let opt = document.createElement('option');
-            opt.value = ""; opt.innerText = "Tidak ada data"; s.appendChild(opt);
-        }
+            opt.value = prov; opt.innerText = prov;
+            s.appendChild(opt);
+        });
+        
+        if (prevVal && sortedProvs.includes(prevVal)) s.value = prevVal; 
     };
 
+    // --- MAIN DASHBOARD LOGIC ---
     const updateDashboard = () => {
-        const { rawData, selectedYear, sector } = state;
-        let stats = {
+        const { rawData, selectedYear, sector, activeProduct } = state;
+        
+        // 1. Hitung KPI Cards (UREA & NPK Terpisah)
+        let kpiStats = {
             curr: { UREA: {real:0, target:0}, NPK: {real:0, target:0} },
             prev: { UREA: {real:0}, NPK: {real:0} },
             nasional: { 
                 UREA: {real:Array(12).fill(0), target:Array(12).fill(0), stock:Array(12).fill(0)}, 
                 NPK: {real:Array(12).fill(0), target:Array(12).fill(0), stock:Array(12).fill(0)} 
-            },
-            provinsi: {} 
+            }
         };
 
+        // 2. Hitung Data Ranking & Dropdown (Hanya Produk Aktif)
+        let rankStats = {}; 
+        let dropdownProvs = new Set();
+
         rawData.forEach(r => {
-            let isSectorMatch = (sector === 'SUBSIDI') ? 
-                (r.SEKTOR.includes('SUBSIDI')) : (r.SEKTOR.includes('RETAIL')); 
+            let isSectorMatch = (sector === 'SUBSIDI') ? r.SEKTOR.includes('SUBSIDI') : r.SEKTOR.includes('RETAIL');
             if (!isSectorMatch) return;
 
             let prodKey = '';
@@ -146,58 +149,43 @@ const app = (() => {
             let isTarget = r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET');
             let isStock = r.JENIS.includes('STOK') || r.JENIS.includes('STOCK');
 
+            // -- Logic KPI Global (Semua Produk) --
             if (r.TAHUN === selectedYear) {
                 if (isReal) {
-                    stats.curr[prodKey].real += r.TONASE;
-                    if(r.BULAN >= 0) stats.nasional[prodKey].real[r.BULAN] += r.TONASE;
-                    
-                    // Agregasi Per Provinsi {real, target}
-                    if (!stats.provinsi[r.PROVINSI]) stats.provinsi[r.PROVINSI] = { real: 0, target: 0 };
-                    stats.provinsi[r.PROVINSI].real += r.TONASE;
-                } 
-                else if (isTarget) {
-                    stats.curr[prodKey].target += r.TONASE;
-                    if(r.BULAN >= 0) stats.nasional[prodKey].target[r.BULAN] += r.TONASE;
-                    
-                    // Agregasi Target Provinsi
-                    if (!stats.provinsi[r.PROVINSI]) stats.provinsi[r.PROVINSI] = { real: 0, target: 0 };
-                    stats.provinsi[r.PROVINSI].target += r.TONASE;
-                }
-                else if (isStock) {
-                    if(r.BULAN >= 0) stats.nasional[prodKey].stock[r.BULAN] += r.TONASE;
+                    kpiStats.curr[prodKey].real += r.TONASE;
+                    if(r.BULAN >= 0) kpiStats.nasional[prodKey].real[r.BULAN] += r.TONASE;
+                } else if (isTarget) {
+                    kpiStats.curr[prodKey].target += r.TONASE;
+                    if(r.BULAN >= 0) kpiStats.nasional[prodKey].target[r.BULAN] += r.TONASE;
+                } else if (isStock) {
+                    if(r.BULAN >= 0) kpiStats.nasional[prodKey].stock[r.BULAN] += r.TONASE;
                 }
             }
-            if (r.TAHUN === (selectedYear - 1) && isReal) stats.prev[prodKey].real += r.TONASE;
+            if (r.TAHUN === (selectedYear - 1) && isReal) kpiStats.prev[prodKey].real += r.TONASE;
+
+            // -- Logic Ranking (Hanya Produk Aktif) --
+            if (prodKey === activeProduct && r.TAHUN === selectedYear) {
+                if (r.PROVINSI && r.PROVINSI !== 'LAINNYA') {
+                    dropdownProvs.add(r.PROVINSI);
+                    if (!rankStats[r.PROVINSI]) rankStats[r.PROVINSI] = { real: 0 };
+                    if (isReal) rankStats[r.PROVINSI].real += r.TONASE;
+                }
+            }
         });
 
-        // Update Dropdown Provinsi (ambil key provinsi yg valid saja)
-        const dropdownProvs = new Set();
-        rawData.forEach(r => {
-            if (r.TAHUN !== selectedYear) return;
-            let isSectorMatch = (state.sector === 'SUBSIDI') ? 
-                (r.SEKTOR.includes('SUBSIDI')) : (r.SEKTOR.includes('RETAIL'));
-            if (!isSectorMatch) return;
-            let prodKey = '';
-            if (r.PRODUK.includes('UREA') || r.PRODUK.includes('NITREA')) prodKey = 'UREA';
-            else if (r.PRODUK.includes('NPK') || r.PRODUK.includes('PHONSKA')) prodKey = 'NPK';
-            
-            if (prodKey === state.activeProduct) {
-                if (r.PROVINSI && r.PROVINSI !== 'LAINNYA') dropdownProvs.add(r.PROVINSI);
-            }
-        });
         populateProvDropdown([...dropdownProvs]);
-
-        renderKPI(stats);
-        renderRankings(stats.provinsi); 
-        renderNasionalChart(stats.nasional);
+        renderKPI(kpiStats);
+        renderRankings(rankStats); // Kirim data ranking spesifik produk aktif
+        renderNasionalChart(kpiStats.nasional);
         renderProvChart(); 
     };
 
+    // --- RENDERERS ---
     const renderKPI = (stats) => {
-        const updateCard = (key, data) => {
-            const real = data.curr[key].real;
-            const target = data.curr[key].target;
-            const prev = data.prev[key].real;
+        const updateCard = (key) => {
+            const real = stats.curr[key].real;
+            const target = stats.curr[key].target;
+            const prev = stats.prev[key].real;
             const pct = target > 0 ? (real/target*100) : 0;
             
             document.getElementById(`val-${key.toLowerCase()}-real`).innerText = formatNumber(real);
@@ -213,12 +201,57 @@ const app = (() => {
             } else if (real > 0) growthVal = 100;
 
             const badge = document.getElementById(`growth-${key.toLowerCase()}-badge`);
-            document.getElementById(`growth-${key.toLowerCase()}-val`).innerText = growthVal.toFixed(1) + '%';
+            document.getElementById(`growth-${key.toLowerCase()}-val`).innerText = Math.abs(growthVal).toFixed(1) + '%';
             badge.className = `growth-badge ${isUp ? 'growth-up' : 'growth-down'}`;
             badge.innerHTML = `<i class="fas fa-arrow-${isUp ? 'up' : 'down'}"></i> ${Math.abs(growthVal).toFixed(1)}%`;
         };
-        updateCard('UREA', stats);
-        updateCard('NPK', stats);
+        updateCard('UREA');
+        updateCard('NPK');
+    };
+
+    const renderRankings = (provData) => {
+        // Data provData sekarang hanya berisi data Produk Aktif (Urea ATAU NPK)
+        let arr = Object.keys(provData).map(key => {
+            return { 
+                name: key, 
+                real: provData[key].real 
+            };
+        });
+
+        // Sortir dari Terbesar ke Terkecil
+        arr.sort((a,b) => b.real - a.real);
+
+        // Render Top 5
+        const listTop5 = document.getElementById('list-top5');
+        if (arr.length > 0) {
+            listTop5.innerHTML = arr.slice(0, 5).map((item, i) => `
+                <div class="rank-item">
+                    <div class="rank-left">
+                        <div class="rank-num best">${i+1}</div>
+                        <div class="rank-name">${item.name}</div>
+                    </div>
+                    <div class="rank-val val-best">${formatNumber(item.real)}</div>
+                </div>
+            `).join('');
+        } else {
+            listTop5.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Tidak ada data</div>';
+        }
+
+        // Render Bottom 5
+        const listOthers = document.getElementById('list-others');
+        if(arr.length > 5) {
+            listOthers.innerHTML = arr.slice(-5).reverse().map((item, i) => `
+                <div class="rank-item">
+                    <div class="rank-left">
+                        <div class="rank-num warn">${i+1}</div>
+                        <div class="rank-name">${item.name}</div>
+                    </div>
+                    <div class="rank-val val-warn">${formatNumber(item.real)}</div>
+                </div>
+            `).join('');
+        } else {
+            listOthers.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data kurang untuk ditampilkan</div>';
+        }
     };
 
     const renderNasionalChart = (nasStats) => {
@@ -242,55 +275,19 @@ const app = (() => {
                 datasets: [
                     {
                         label: 'Realisasi', data: data.real, borderColor: color, backgroundColor: gradient,
-                        fill: true, tension: 0.4, borderWidth: 3, 
-                        pointRadius: 4, pointHoverRadius: 6, pointStyle: 'circle' 
+                        fill: true, tension: 0.4, borderWidth: 3, pointRadius: 3
                     },
                     {
                         label: 'Target', data: data.target, borderColor: '#666', borderDash: [6, 6],
-                        borderWidth: 2, fill: false, tension: 0.4, 
-                        pointRadius: 0, 
-                        pointStyle: targetIcon 
-                    },
-                    {
-                        label: 'Stok', data: data.stock, borderColor: '#a8a29e', borderDash: [], 
-                        showLine: true, borderWidth: 2, 
-                        pointRadius: 0, pointHoverRadius: 6, 
-                        pointStyle: 'circle', 
-                        fill: false, tension: 0.3
+                        borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0, pointStyle: targetIcon 
                     }
                 ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
-                plugins: { 
-                    legend: { display: true, labels: { usePointStyle: true, boxWidth: 6 } }, 
-                    tooltip: { 
-                        backgroundColor: 'rgba(33, 33, 33, 0.95)',
-                        titleColor: '#ececec', bodyColor: '#b3b3b3',
-                        borderColor: '#424242', borderWidth: 1,
-                        displayColors: false, 
-                        callbacks: {
-                            label: function(context) {
-                                return context.dataset.label + ': ' + formatNumber(context.raw);
-                            }
-                        }
-                    }
-                },
-                scales: { 
-                    x: { grid: { display: false } }, 
-                    y: { 
-                        grid: { color: '#333' }, beginAtZero: true, 
-                        ticks: { 
-                            maxTicksLimit: 5,
-                            callback: function(value) { 
-                                if (value === 0) return null;
-                                if (value >= 1000) return (value / 1000) + ' rb';
-                                return value;
-                            } 
-                        } 
-                    } 
-                }
+                plugins: { legend: { display: true, labels: { usePointStyle: true, boxWidth: 6 } } },
+                scales: { x: { grid: { display: false } }, y: { grid: { color: '#333' }, beginAtZero: true, ticks: { maxTicksLimit: 5, callback: (v) => v >= 1000 ? (v/1000)+' rb' : v } } }
             }
         });
     };
@@ -307,9 +304,7 @@ const app = (() => {
         }
         placeholder.style.display = 'none';
 
-        let mReal = Array(12).fill(0);
-        let mTarget = Array(12).fill(0);
-        let mStock = Array(12).fill(0);
+        let mReal = Array(12).fill(0), mTarget = Array(12).fill(0), mStock = Array(12).fill(0);
 
         state.rawData.forEach(r => {
             if (r.TAHUN !== state.selectedYear || r.PROVINSI !== provName) return;
@@ -320,7 +315,7 @@ const app = (() => {
             if (r.PRODUK.includes('UREA') || r.PRODUK.includes('NITREA')) prodKey = 'UREA';
             else if (r.PRODUK.includes('NPK') || r.PRODUK.includes('PHONSKA')) prodKey = 'NPK';
             
-            if (prodKey !== state.activeProduct) return;
+            if (prodKey !== state.activeProduct) return; // Filter Chart sesuai tombol
 
             if (r.BULAN >= 0) {
                 if (r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN')) mReal[r.BULAN] += r.TONASE;
@@ -331,11 +326,9 @@ const app = (() => {
 
         if(chartProvinsi) chartProvinsi.destroy();
         const colorMain = state.activeProduct === 'UREA' ? '#fbbf24' : '#38bdf8';
-        
         const gradient = ctx.createLinearGradient(0, 0, 0, 300);
         gradient.addColorStop(0, hexToRgbA(colorMain, 0.4));
         gradient.addColorStop(1, hexToRgbA(colorMain, 0.0));
-
         const targetIcon = createDashedCircle('#999');
 
         chartProvinsi = new Chart(ctx, {
@@ -345,108 +338,27 @@ const app = (() => {
                 datasets: [
                     {
                         label: 'Realisasi', data: mReal, borderColor: colorMain, backgroundColor: gradient,
-                        fill: true, tension: 0.3, borderWidth: 2, 
-                        pointRadius: 4, pointHoverRadius: 6, pointStyle: 'circle'
+                        fill: true, tension: 0.3, borderWidth: 2, pointRadius: 4
                     },
                     {
                         label: 'Target', data: mTarget, borderColor: '#999', borderDash: [4, 4], 
-                        borderWidth: 1, pointRadius: 0, tension: 0.3, 
-                        pointStyle: targetIcon
+                        borderWidth: 1, pointRadius: 0, tension: 0.3, pointStyle: targetIcon
                     },
                     {
                         label: 'Stok', data: mStock, borderColor: '#a8a29e', borderDash: [], 
-                        showLine: true, borderWidth: 2, 
-                        pointRadius: 0, pointHoverRadius: 6, 
-                        pointStyle: 'circle', fill: false, tension: 0.3
+                        showLine: true, borderWidth: 2, pointRadius: 0, fill: false
                     }
                 ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { display: true, labels: { usePointStyle: true, boxWidth: 6 } },
-                tooltip: { 
-                    backgroundColor: 'rgba(33, 33, 33, 0.95)',
-                    titleColor: '#ececec', bodyColor: '#b3b3b3',
-                    borderColor: '#424242', borderWidth: 1,
-                    displayColors: false, 
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': ' + formatNumber(context.raw);
-                        }
-                    }
-                }
-                },
-                scales: { x: { grid: { display: false } }, y: { grid: { color: '#333' }, beginAtZero: true, ticks: { maxTicksLimit: 5, callback: function(value) { if (value === 0) return null; if (value >= 1000) return (value / 1000) + ' rb'; return value; } } } }
+                plugins: { legend: { display: true, labels: { usePointStyle: true, boxWidth: 6 } } },
+                scales: { x: { grid: { display: false } }, y: { grid: { color: '#333' }, beginAtZero: true, ticks: { maxTicksLimit: 5, callback: (v) => v >= 1000 ? (v/1000)+' rb' : v } } }
             }
         });
     };
 
-    const renderRankings = (provData) => {
-        // 1. Konversi Object ke Array dengan Logika Perhitungan
-        let arr = Object.keys(provData).map(key => {
-            const item = provData[key];
-            let sortVal = 0;
-            let displayVal = '';
-
-            if (state.sector === 'SUBSIDI') {
-                // LOGIKA SUBSIDI: PERSENTASE TERHADAP RKO (TARGET)
-                sortVal = item.target > 0 ? (item.real / item.target) * 100 : 0;
-                displayVal = sortVal.toFixed(1) + '%';
-            } else {
-                // LOGIKA RETAIL: TONASE SAJA
-                sortVal = item.real;
-                displayVal = formatNumber(item.real);
-            }
-
-            return { 
-                name: key, 
-                val: sortVal,
-                display: displayVal,
-                rawReal: item.real 
-            };
-        });
-
-        // 2. Filter data yang realisasinya 0
-        let activeData = arr.filter(item => item.rawReal > 0);
-
-        // 3. Sortir: Tertinggi ke Terendah (Desc)
-        activeData.sort((a,b) => b.val - a.val);
-
-        const top5 = activeData.slice(0, 5);
-        document.getElementById('list-top5').innerHTML = top5.map((item, i) => `
-            <div class="rank-item">
-                <div class="rank-left">
-                    <div class="rank-num best">${i+1}</div>
-                    <div class="rank-name">${item.name}</div>
-                </div>
-                <div class="rank-val val-best">${item.display}</div>
-            </div>
-        `).join('');
-
-        const others = activeData.slice(-5).reverse(); // Ambil 5 terbawah, balik urutan
-        const listOthers = document.getElementById('list-others');
-        if(others.length === 0) listOthers.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Semua provinsi masuk Top 5 atau data kosong</div>';
-        else listOthers.innerHTML = others.map((item, i) => `
-            <div class="rank-item">
-                <div class="rank-left">
-                    <div class="rank-num warn">${i+1}</div>
-                    <div class="rank-name">${item.name}</div>
-                </div>
-                <div class="rank-val val-warn">${item.display}</div>
-            </div>
-        `).join('');
-    };
-
-    const normalizeMonth = (str) => {
-        const map = {'JAN':0, 'JANUARI':0, 'FEB':1, 'FEBRUARI':1, 'MAR':2, 'MARET':2, 'APR':3, 'APRIL':3, 'MEI':4, 'MAY':4, 'JUN':5, 'JUNI':5, 'JUL':6, 'JULI':6, 'AGU':7, 'AGUSTUS':7, 'SEP':8, 'SEPTEMBER':8, 'OKT':9, 'OKTOBER':9, 'NOV':10, 'NOVEMBER':10, 'DES':11, 'DESEMBER':11};
-        return map[String(str).toUpperCase().trim()] ?? -1;
-    };
-    const toTitleCase = (str) => str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-    const hexToRgbA = (hex, alpha) => {
-        let c; if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){ c= hex.substring(1).split(''); if(c.length== 3){ c= [c[0], c[0], c[1], c[1], c[2], c[2]]; } c= '0x'+c.join(''); return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')'; } return hex;
-    }
-    
     const renderSidebar = () => {
         const sb = document.getElementById('sidebar');
         const main = document.getElementById('main-content');

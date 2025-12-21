@@ -2,31 +2,18 @@
 <html lang="id" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <meta property="og:title" content="Dashboard APP">
-    <meta property="og:description" content="Monitoring Realisasi Subsidi & Retail">
-    <meta property="og:image" content="https://appbisa.pages.dev/assets/thumbnail.jpg">
-    <meta property="og:url" content="https://appbisa.pages.dev/">
-    <meta property="og:type" content="website">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard APP</title>
-    <base target="_top">
-    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
-    <link rel="shortcut icon" type="image/x-icon" href="assets/favicon.ico">
-
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <link rel="stylesheet" href="css/style.css">
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
     <div id="loader">
         <div class="spinner"></div>
-        <div style="font-size: 12px; color: var(--text-muted); letter-spacing: 1px;">MENGHUBUNGKAN KE SERVER...</div>
+        <div style="font-size: 12px; color: var(--text-muted); letter-spacing: 1px;">MEMUAT DATA...</div>
     </div>
 
     <div class="overlay" onclick="toggleSidebar()"></div>
@@ -35,14 +22,12 @@
         <div class="brand">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div class="brand-title">Dashboard</div>
-                <button class="theme-btn-header" onclick="toggleTheme()" title="Ganti Tema">
-                    <i class="fas fa-sun" id="theme-icon-sidebar"></i>
-                </button>
+                <button class="theme-btn-header" onclick="toggleTheme()"><i class="fas fa-sun" id="theme-icon-sidebar"></i></button>
             </div>
             <div class="brand-subtitle">Adm Pemasaran & Penjualan</div>
         </div>
 
-        <div class="menu-label">Sektor Penjualan</div>
+        <div class="menu-label">Sektor</div>
         <nav>
             <div class="nav-item active" id="nav-subsidi" onclick="setSector('SUBSIDI')">
                 <i class="fas fa-industry"></i> <span>Subsidi</span>
@@ -64,19 +49,15 @@
     <main class="main-content">
         <header class="header">
             <div class="header-left">
-                <button class="mobile-toggle" onclick="toggleSidebar()">
-                    <i class="fas fa-bars"></i>
-                </button>
+                <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                 <div class="page-info">
                     <h2 id="page-heading">Subsidi</h2>
-                    <p id="last-update">Data Tahun: 2025</p>
+                    <p id="year-label">Data Tahun: 2025</p>
                 </div>
             </div>
             <div class="header-right">
-                <div class="select-wrapper year-wrapper" id="year-select-wrapper" style="opacity: 0.7; pointer-events: none;">
-                    <div class="select-trigger">
-                        <span id="year-dropdown-text">Auto</span>
-                    </div>
+                <div class="select-wrapper">
+                    <div class="select-trigger"><span id="year-text">Auto</span></div>
                 </div>
             </div>
         </header>
@@ -85,79 +66,82 @@
             <div class="kpi-grid">
                 <div class="kpi-card kpi-urea">
                     <div class="kpi-header">
-                        <span class="kpi-title">Urea</span>
-                        <div class="kpi-icon" style="background: var(--bg-body);"><i class="fas fa-cubes"></i></div>
+                        <span class="kpi-title">UREA</span>
+                        <div class="kpi-icon"><i class="fas fa-cubes"></i></div>
                     </div>
                     <div class="kpi-main-val" id="val-urea">0</div>
-                    
                     <div class="kpi-sub-val">
-                        <span>Realisasi Total</span>
-                        </div>
-                    <div class="progress-track"><div class="progress-bar" style="width: 0%; background: var(--color-urea);"></div></div>
+                        <span>Target: <span id="txt-urea-rkap">0</span></span>
+                        <span class="kpi-badge" id="kpi-urea-pct">0%</span>
+                    </div>
+                    <div class="progress-track"><div class="progress-bar" id="prog-urea" style="width: 0%"></div></div>
+                    <div class="kpi-footer">
+                        <i class="fas fa-info-circle"></i> Sisa: <b id="txt-urea-sisa">0</b>
+                    </div>
                 </div>
 
                 <div class="kpi-card kpi-npk">
                     <div class="kpi-header">
                         <span class="kpi-title">NPK</span>
-                        <div class="kpi-icon" style="background: var(--bg-body);"><i class="fas fa-leaf"></i></div>
+                        <div class="kpi-icon"><i class="fas fa-leaf"></i></div>
                     </div>
                     <div class="kpi-main-val" id="val-npk">0</div>
-
                     <div class="kpi-sub-val">
-                        <span>Realisasi Total</span>
+                        <span>Target: <span id="txt-npk-rkap">0</span></span>
+                        <span class="kpi-badge" id="kpi-npk-pct">0%</span>
                     </div>
-                    <div class="progress-track"><div class="progress-bar" style="width: 0%; background: var(--color-npk);"></div></div>
+                    <div class="progress-track"><div class="progress-bar" id="prog-npk" style="width: 0%"></div></div>
+                    <div class="kpi-footer">
+                        <i class="fas fa-info-circle"></i> Sisa: <b id="txt-npk-sisa">0</b>
+                    </div>
                 </div>
 
                 <div class="kpi-card">
-                    <div class="kpi-header"><span class="kpi-title">Growth Urea (YoY)</span></div>
-                    <div class="sparkline-container" style="display:flex; align-items:center; height:60px; color:grey; font-size:12px;">Segera Hadir</div>
+                    <div class="kpi-header"><span class="kpi-title">Tren Urea (Bulanan)</span></div>
+                    <div class="sparkline-container"><canvas id="sparkUrea"></canvas></div>
                 </div>
                  <div class="kpi-card">
-                    <div class="kpi-header"><span class="kpi-title">Growth NPK (YoY)</span></div>
-                    <div class="sparkline-container" style="display:flex; align-items:center; height:60px; color:grey; font-size:12px;">Segera Hadir</div>
+                    <div class="kpi-header"><span class="kpi-title">Tren NPK (Bulanan)</span></div>
+                    <div class="sparkline-container"><canvas id="sparkNpk"></canvas></div>
                 </div>
             </div>
 
             <div class="charts-row">
-                <div class="chart-section" style="margin-bottom: 0;">
+                <div class="chart-section">
                     <div class="section-header">
                         <div class="section-title">Realisasi Nasional</div>
                         <div class="btn-group">
-                            <button class="btn-toggle active t-urea">Grafik</button>
+                            <button class="btn-toggle active" id="btn-chart-urea" onclick="setChartProduct('UREA')">UREA</button>
+                            <button class="btn-toggle" id="btn-chart-npk" onclick="setChartProduct('NPK')">NPK</button>
                         </div>
                     </div>
                     <div class="chart-wrapper"><canvas id="chartNasional"></canvas></div>
                 </div>
                 
-                <div class="chart-section" style="margin-bottom: 0;">
+                <div class="chart-section">
                      <div class="section-header">
-                        <div class="section-title">Info Wilayah</div>
+                        <div class="section-title">Peta Wilayah</div>
                     </div>
-                    <div class="chart-wrapper" style="display:flex; align-items:center; justify-content:center; color:grey; font-size:12px;">
-                        Pilih Wilayah (Segera Hadir)
+                    <div class="chart-wrapper" style="display: flex; align-items: center; justify-content: center; color: grey;">
+                        <canvas id="chartProv"></canvas>
                     </div>
                 </div>
             </div>
 
             <div class="ranking-grid">
-                <div class="chart-section" style="margin-bottom: 0;">
-                    <div class="section-header"><div class="section-title"><i class="fas fa-trophy" style="color: #fbbf24; margin-right: 8px;"></i>Top 5 Provinsi</div></div>
-                    <div id="top-province-list" style="display: flex; flex-direction: column; gap: 5px;"></div>
+                <div class="chart-section">
+                    <div class="section-header"><div class="section-title">🏆 Top 5 Provinsi</div></div>
+                    <div id="list-best" class="rank-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
                 
-                <div class="chart-section" style="margin-bottom: 0;">
-                    <div class="section-header"><div class="section-title"><i class="fas fa-info-circle" style="color: var(--text-secondary); margin-right: 8px;"></i>Keterangan</div></div>
-                    <div style="padding: 10px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                        Data ditampilkan berdasarkan update realisasi terakhir dari server. <br>
-                        Pastikan koneksi internet stabil.
-                    </div>
+                <div class="chart-section">
+                    <div class="section-header"><div class="section-title">⚠️ Perlu Perhatian</div></div>
+                    <div id="list-warn" class="rank-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
             </div>
             
             <div class="footer-copyright">
                 <p>Copyright © 2025 <strong>Adm Penjualan PSO & Ritel</strong></p>
-                <p>Design by 00.0034</p>
             </div>
             <div style="height: 20px;"></div> 
         </div>

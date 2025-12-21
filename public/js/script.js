@@ -1,38 +1,41 @@
 /* =========================================================
-   SCRIPT HYBRID FINAL
-   (Mesin Data Baru + Fitur Lengkap Lama)
+   1. KONFIGURASI
    ========================================================= */
-
 const API_URL = 'https://script.google.com/macros/s/AKfycbzFanoakpPL3NaMh8CqbolDF5wo9iVb6ikIKQavQh15aGJYBCj7rGQdWyE3sMC911wxdA/exec';
 const ADMIN_PASSWORD = 'pso123';
 
-// GLOBAL VARS
+/* =========================================================
+   2. VARIABEL GLOBAL
+   ========================================================= */
 let rawData = [];
 let currentSector = 'SUBSIDI'; 
-let currentChartProduct = 'UREA'; // Default grafik
+let currentChartProduct = 'UREA';
 let selectedYear = new Date().getFullYear();
 
-// KAMUS BULAN (Agar teks Spreadsheet terbaca)
+// KAMUS BULAN (Untuk parsing data Spreadsheet)
 const MONTH_MAP = {
-    'JAN': 0, 'JANUARI': 0, 'FEB': 1, 'FEBRUARI': 1, 'MAR': 2, 'MARET': 2,
-    'APR': 3, 'APRIL': 3, 'MEI': 4, 'MAY': 4, 'JUN': 5, 'JUNI': 5,
-    'JUL': 6, 'JULI': 6, 'AGU': 7, 'AGUSTUS': 7, 'AUG': 7, 'SEP': 8, 'SEPTEMBER': 8,
-    'OKT': 9, 'OKTOBER': 9, 'NOV': 10, 'NOVEMBER': 10, 'DES': 11, 'DESEMBER': 11
+    'JAN': 0, 'JANUARI': 0, 'FEB': 1, 'FEBRUARI': 1, 
+    'MAR': 2, 'MARET': 2, 'APR': 3, 'APRIL': 3, 
+    'MEI': 4, 'MAY': 4, 'JUN': 5, 'JUNI': 5,
+    'JUL': 6, 'JULI': 6, 'AGU': 7, 'AGUSTUS': 7, 'AUG': 7,
+    'SEP': 8, 'SEPTEMBER': 8, 'OKT': 9, 'OKTOBER': 9,
+    'NOV': 10, 'NOVEMBER': 10, 'DES': 11, 'DESEMBER': 11
 };
+// LABEL GRAFIK
 const CHART_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
 // CHART INSTANCES
-let chartNasional, chartProv, sparkUrea, sparkNpk;
-let isAdminLoggedIn = false;
+let chartNasional, sparkUrea, sparkNpk;
 
-// 1. INIT
+/* =========================================================
+   3. INIT & DATA LOADING
+   ========================================================= */
 window.onload = function() {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(savedTheme);
     loadData();
 };
 
-// 2. LOAD DATA
 function loadData() {
     const loader = document.getElementById('loader');
     if(loader) loader.style.display = 'flex';
@@ -42,8 +45,8 @@ function loadData() {
     .then(data => {
         if (!Array.isArray(data)) { console.error("Data Error"); return; }
         
-        processData(data); // Bersihkan data
-        updateDashboard(); // Tampilkan
+        processData(data); // 1. Bersihkan Data
+        updateAll();       // 2. Hitung & Tampilkan Semua
         
         if(loader) loader.style.display = 'none';
     })
@@ -53,7 +56,7 @@ function loadData() {
     });
 }
 
-// 3. PROCESS DATA (Pembersihan Teks -> Angka)
+// FUNGSI PEMBERSIH DATA (Menggunakan Logika Baru yg Sukses)
 function processData(data) {
     rawData = data.map(r => {
         // Bersihkan Angka (1.250 -> 1250)
@@ -86,25 +89,32 @@ function processData(data) {
         const uniqueYears = [...new Set(rawData.map(r => r.TAHUN))].sort((a,b) => b-a);
         if(uniqueYears.length > 0) {
             selectedYear = uniqueYears[0];
-            const el = document.getElementById('year-label');
-            if(el) el.innerText = `Data Tahun: ${selectedYear}`;
         }
     }
+    
+    // Update Label Tahun di Header
+    const yearInfo = document.querySelector('.page-info p');
+    if(yearInfo) yearInfo.innerText = `Data Tahun: ${selectedYear}`;
 }
 
-// 4. UPDATE DASHBOARD (LOGIKA LENGKAP)
-function updateDashboard() {
+/* =========================================================
+   4. LOGIKA UTAMA (PERHITUNGAN)
+   ========================================================= */
+function updateAll() {
     if (rawData.length === 0) return;
 
     // A. Siapkan Wadah Data
     let stats = {
-        UREA: { real: 0, rkap: 0, realMonthly: Array(12).fill(0), rkapMonthly: Array(12).fill(0) },
-        NPK: { real: 0, rkap: 0, realMonthly: Array(12).fill(0), rkapMonthly: Array(12).fill(0) }
+        UREA: { real: 0, rkap: 0, realMonthly: Array(12).fill(0) },
+        NPK:  { real: 0, rkap: 0, realMonthly: Array(12).fill(0) }
     };
-    let provStats = {}; // Untuk ranking
+    
+    // Wadah Ranking (Provinsi: { real: 0, rkap: 0 })
+    let provStats = {}; 
 
-    // B. Looping & Filter
+    // B. Looping Data
     rawData.forEach(r => {
+        // Filter Tahun
         if (r.TAHUN !== selectedYear) return;
 
         // Filter Sektor
@@ -113,34 +123,33 @@ function updateDashboard() {
             (r.SEKTOR_RAW.includes('RETAIL') || r.SEKTOR_RAW.includes('NON'));
         if (!isSectorMatch) return;
 
-        // Identifikasi Jenis (Realisasi vs Target/RKAP)
+        // Identifikasi Jenis & Produk
         const isReal = r.JENIS_RAW.includes('REALISASI') || r.JENIS_RAW.includes('PENJUALAN');
-        const isTarget = r.JENIS_RAW.includes('RKAP') || r.JENIS_RAW.includes('TARGET');
-
-        // Identifikasi Produk
+        const isTarget = r.JENIS_RAW.includes('RKAP') || r.JENIS_RAW.includes('TARGET') || r.JENIS_RAW.includes('RKO');
+        
         let pKey = '';
         if (r.PRODUK_RAW.includes('UREA') || r.PRODUK_RAW.includes('NITREA')) pKey = 'UREA';
         else if (r.PRODUK_RAW.includes('NPK') || r.PRODUK_RAW.includes('PHONSKA')) pKey = 'NPK';
 
         if (!pKey) return;
 
-        // Aggregasi
+        // Inisialisasi object provinsi jika belum ada
+        let prov = r.PROVINSI_RAW || 'LAINNYA';
+        if (!provStats[prov]) provStats[prov] = { real: 0, rkap: 0 };
+
+        // Aggregasi Data
         if (isReal) {
             stats[pKey].real += r.TONASE;
-            // Ranking per provinsi
-            let prov = r.PROVINSI_RAW || 'LAINNYA';
-            if (!provStats[prov]) provStats[prov] = 0;
-            provStats[prov] += r.TONASE;
-            // Grafik Bulanan
+            provStats[prov].real += r.TONASE; // Tambah realisasi provinsi
             if (r.BULAN_IDX >= 0) stats[pKey].realMonthly[r.BULAN_IDX] += r.TONASE;
         } 
         else if (isTarget) {
             stats[pKey].rkap += r.TONASE;
-            if (r.BULAN_IDX >= 0) stats[pKey].rkapMonthly[r.BULAN_IDX] += r.TONASE;
+            provStats[prov].rkap += r.TONASE; // Tambah target provinsi
         }
     });
 
-    // C. Update Kartu KPI (Dengan Persentase & Progress)
+    // C. Update UI Kartu Atas
     updateCard('urea', stats.UREA);
     updateCard('npk', stats.NPK);
 
@@ -148,108 +157,137 @@ function updateDashboard() {
     drawSparkline('sparkUrea', stats.UREA.realMonthly, 'var(--color-urea)');
     drawSparkline('sparkNpk', stats.NPK.realMonthly, 'var(--color-npk)');
 
-    // E. Update Ranking
+    // E. Update Ranking (Logika Lama Dikembalikan)
     renderRankings(provStats);
 
     // F. Update Grafik Utama
     renderMainChart(stats);
-    
-    // G. Update Dropdown Provinsi
-    populateProvDropdown(provStats);
 }
 
-// Helper: Update Kartu
+// --- HELPER: UPDATE KARTU KPI ---
 function updateCard(type, data) {
     const real = data.real;
     const rkap = data.rkap;
-    // Hitung persen (jika target 0, persen 0)
+    // Hitung persen: Jika target 0, persen 0. 
     const pct = rkap > 0 ? (real / rkap * 100) : 0;
     const sisa = rkap - real;
 
-    updateEl(`kpi-${type}-val`, formatNumber(real));
-    updateEl(`txt-${type}-rkap`, formatNumber(rkap));
-    updateEl(`kpi-${type}-pct`, pct.toFixed(1) + '%');
-    updateEl(`txt-${type}-sisa`, formatNumber(sisa));
+    updateEl(`kpi-${type}-val`, formatNumber(real)); // ID di HTML Baru: kpi-urea-val (di index.html lama) atau val-urea (di baru)
+    // Cek ID mana yang dipakai di HTML saat ini.
+    // Berdasarkan file index.html TERAKHIR yang Anda kasih, ID nya adalah: 'val-urea'
+    // TAPI script lama pakai 'kpi-urea-val'.
+    // SAYA AKAN PAKAI TRY-CATCH UNTUK KEDUA ID AGAR AMAN.
     
-    // Update Progress Bar
+    safeUpdateText(`val-${type}`, formatNumber(real)); // ID HTML Baru
+    safeUpdateText(`kpi-${type}-val`, formatNumber(real)); // Jaga-jaga ID lama
+    
+    safeUpdateText(`txt-${type}-rkap`, formatNumber(rkap));
+    safeUpdateText(`kpi-${type}-pct`, pct.toFixed(1) + '%');
+    safeUpdateText(`txt-${type}-sisa`, formatNumber(sisa));
+    
     const progEl = document.getElementById(`prog-${type}`);
     if(progEl) progEl.style.width = Math.min(pct, 100) + '%';
 }
 
-// Helper: Render Ranking
+// --- HELPER: RENDER RANKING (MENGEMBALIKAN LOGIKA LAMA) ---
 function renderRankings(stats) {
-    const listBest = document.getElementById('list-best');
-    const listWarn = document.getElementById('list-warn');
+    const listBest = document.getElementById('top-province-list') || document.getElementById('list-best');
+    const listWarn = document.getElementById('list-warn'); // Opsional jika ada
+    
     if (!listBest) return;
 
-    let sorted = Object.keys(stats).map(k => ({ name: toTitleCase(k), val: stats[k] }));
-    sorted.sort((a, b) => b.val - a.val);
+    // Convert Object ke Array
+    let rankArray = Object.keys(stats).map(prov => {
+        let d = stats[prov];
+        let pct = d.rkap > 0 ? (d.real / d.rkap * 100) : 0;
+        return { 
+            name: toTitleCase(prov), 
+            real: d.real, 
+            rkap: d.rkap, 
+            pct: pct 
+        };
+    });
 
-    // Top 5
-    listBest.innerHTML = sorted.slice(0, 5).map((item, i) => createRankItem(i+1, item, true)).join('');
-    // Bottom 5 (Jika data cukup banyak)
-    if (sorted.length > 5) {
-        let bottom = sorted.slice(-5).reverse();
-        listWarn.innerHTML = bottom.map((item, i) => createRankItem(i+1, item, false)).join('');
+    // LOGIKA SORTING (Mirip Script Lama)
+    if (currentSector === 'RETAIL') {
+        // Retail biasanya sort by Volume Realisasi
+        rankArray.sort((a,b) => b.real - a.real);
     } else {
-        listWarn.innerHTML = '<p style="padding:10px; font-size:12px; color:grey">Data tidak cukup</p>';
+        // Subsidi biasanya sort by Persentase Capaian (Siapa yang paling mendekati target)
+        // ATAU Default sort by Volume Realisasi jika user mau lihat volume terbesar
+        // Mari kita pakai Volume Realisasi saja agar pasti muncul angka besar di atas
+        rankArray.sort((a,b) => b.real - a.real);
     }
-}
 
-function createRankItem(idx, item, isBest) {
-    return `
-    <div class="rank-item">
-        <div class="rank-left">
-            <div class="rank-badge ${isBest && idx===1 ? 'badge-1' : ''}">${idx}</div>
-            <div class="rank-info">
-                <span class="rank-name">${item.name}</span>
-                <span class="rank-desc">Realisasi</span>
+    // Render HTML
+    let html = '';
+    rankArray.slice(0, 5).forEach((item, i) => {
+        const isFirst = i === 0;
+        // Subtext: Menampilkan % jika ada target, atau Realisasi saja
+        let subText = currentSector === 'SUBSIDI' && item.rkap > 0 
+            ? `Capaian: ${item.pct.toFixed(1)}%` 
+            : `Realisasi Total`;
+
+        html += `
+        <div class="rank-item" style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border-subtle);">
+            <div style="display:flex; gap:12px; align-items:center;">
+                <div class="rank-badge ${isFirst ? 'badge-1' : ''}" style="width:30px; height:30px; display:flex; justify-content:center; align-items:center; border-radius:8px; font-weight:bold; border:1px solid var(--border-color); font-size:12px;">
+                    ${i+1}
+                </div>
+                <div>
+                    <span class="rank-name" style="font-weight:600; font-size:13px; display:block;">${item.name}</span>
+                    <span class="rank-meta" style="font-size:11px; color:var(--text-secondary);">${subText}</span>
+                </div>
             </div>
-        </div>
-        <div class="rank-val">${formatNumber(item.val)}</div>
-    </div>`;
+            <div class="rank-val" style="font-weight:700; font-size:13px;">
+                ${formatNumber(item.real)}
+            </div>
+        </div>`;
+    });
+
+    if (rankArray.length === 0) html = '<p style="text-align:center; padding:10px; font-size:12px; color:grey">Data Kosong</p>';
+    list.innerHTML = html;
 }
 
-// Helper: Grafik Utama
+// --- HELPER: GRAFIK UTAMA ---
 function renderMainChart(stats) {
-    // Pilih data berdasarkan tab aktif (Urea / NPK)
-    const d = (currentChartProduct === 'UREA') ? stats.UREA : stats.NPK;
     const ctx = document.getElementById('chartNasional');
     if (!ctx) return;
-    
     if (chartNasional) chartNasional.destroy();
 
+    const d = (currentChartProduct === 'UREA') ? stats.UREA : stats.NPK;
     const styles = getComputedStyle(document.body);
-    const colorMain = currentChartProduct === 'UREA' ? '#F7DA19' : '#055AA1'; // Hardcode fallback colors
-    
+    const colorMain = currentChartProduct === 'UREA' ? '#F7DA19' : '#055AA1'; 
+
     chartNasional = new Chart(ctx, {
         type: 'line',
         data: {
             labels: CHART_LABELS,
             datasets: [
                 { label: 'Realisasi', data: d.realMonthly, borderColor: colorMain, backgroundColor: colorMain+'20', fill: true, tension: 0.4 },
-                { label: 'Target', data: d.rkapMonthly, borderColor: '#888', borderDash: [5,5], fill: false, tension: 0.4 }
+                // Target Bulanan (Rata-rata atau Data Asli jika ada)
+                // Disini kita tampilkan data Asli dari RKO jika ada, jika tidak, flat line
+                { label: 'Target', data: d.rkap > 0 && d.rkapMonthly.reduce((a,b)=>a+b,0) === 0 ? Array(12).fill(d.rkap/12) : d.rkapMonthly, borderColor: '#888', borderDash: [5,5], fill: false, tension: 0.4 }
             ]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: true } },
-            scales: { y: { beginAtZero: true, grid: { color: '#333' } }, x: { grid: { display: false } } }
+            scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: '#333' } } }
         }
     });
 }
 
-// Helper: Grafik Sparkline
+// --- HELPER: SPARKLINES ---
 function drawSparkline(id, data, colorVar) {
     const ctx = document.getElementById(id);
     if (!ctx) return;
     
-    // Ambil warna dari CSS Variable
     const color = getComputedStyle(document.body).getPropertyValue(colorVar.replace('var(','').replace(')','')).trim() || '#fff';
     
-    // Hapus instance lama
-    if (id === 'sparkUrea' && sparkUrea) sparkUrea.destroy();
-    if (id === 'sparkNpk' && sparkNpk) sparkNpk.destroy();
+    // Hapus instance lama (pakai variabel global)
+    if (id === 'sparkUrea') { if(sparkUrea) sparkUrea.destroy(); }
+    if (id === 'sparkNpk') { if(sparkNpk) sparkNpk.destroy(); }
 
     const config = {
         type: 'line',
@@ -262,13 +300,14 @@ function drawSparkline(id, data, colorVar) {
     if (id === 'sparkNpk') sparkNpk = chart;
 }
 
-// UI Interaction
+
+// --- INTERAKSI UI ---
 function setSector(s) {
     currentSector = s;
-    updateEl('nav-subsidi', '', (el) => el.className = s === 'SUBSIDI' ? 'nav-item active' : 'nav-item');
-    updateEl('nav-retail', '', (el) => el.className = s === 'RETAIL' ? 'nav-item active' : 'nav-item');
+    updateEl('nav-subsidi', '', el => el.className = s === 'SUBSIDI' ? 'nav-item active' : 'nav-item');
+    updateEl('nav-retail', '', el => el.className = s === 'RETAIL' ? 'nav-item active' : 'nav-item');
     updateEl('page-heading', s === 'SUBSIDI' ? 'Subsidi' : 'Retail');
-    updateDashboard();
+    updateAll();
     if(window.innerWidth <= 768) toggleSidebar();
 }
 
@@ -276,32 +315,20 @@ function setChartProduct(p) {
     currentChartProduct = p;
     updateEl('btn-chart-urea', '', el => el.className = p === 'UREA' ? 'btn-toggle active' : 'btn-toggle');
     updateEl('btn-chart-npk', '', el => el.className = p === 'NPK' ? 'btn-toggle active' : 'btn-toggle');
-    updateDashboard(); // Redraw chart only
+    updateAll(); // Refresh grafik
 }
 
-function populateProvDropdown(stats) {
-    const sel = document.getElementById('prov-select');
-    if(!sel) return;
-    sel.innerHTML = '<option value="">Semua Wilayah</option>';
-    Object.keys(stats).sort().forEach(prov => {
-        let opt = document.createElement('option');
-        opt.value = prov;
-        opt.innerText = toTitleCase(prov);
-        sel.appendChild(opt);
-    });
-}
-function updateProvChart(provName) {
-    // Fitur chart provinsi bisa ditambahkan logika filter disini nanti
-    alert("Filter wilayah: " + provName);
-}
-
-// UTILS
+// --- UTILS ---
 function updateEl(id, val, cb) {
     const el = document.getElementById(id);
     if(el) {
         if(val !== '') el.innerText = val;
         if(cb) cb(el);
     }
+}
+function safeUpdateText(id, val) {
+    const el = document.getElementById(id);
+    if(el) el.innerText = val;
 }
 function formatNumber(n) { return new Intl.NumberFormat('id-ID').format(n || 0); }
 function toTitleCase(s) { return s.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.substr(1).toLowerCase()); }
@@ -318,17 +345,7 @@ function toggleSidebar() {
     document.querySelector('.overlay').classList.toggle('active');
 }
 
-// ADMIN (Placeholder - Fully restore later if needed)
-function openLoginModal() { 
-    if(!document.getElementById('loginModal')) createLoginModal();
-    document.getElementById('loginModal').classList.add('open'); 
-    document.getElementById('modalBackdrop').classList.add('open');
-}
-function closeAllModals() {
-    document.querySelectorAll('.modal, .backdrop').forEach(e => e.classList.remove('open'));
-}
-function createLoginModal() {
-    const d = document.createElement('div');
-    d.innerHTML = `<div class="modal" id="loginModal"><div class="modal-header"><h3>Admin Login</h3><button class="btn-close" onclick="closeAllModals()">&times;</button></div><div class="modal-body"><input type="password" id="adminPass" class="form-control" placeholder="Password"></div><div class="modal-footer"><button class="btn btn-primary" onclick="alert('Login Logic')">Login</button></div></div>`;
-    document.body.appendChild(d);
-}
+// ADMIN (Dummy)
+function openLoginModal() { alert("Login Admin"); }
+function openAdminPanel() { alert("Panel Admin"); }
+function closeAllModals() { document.querySelector('.backdrop').classList.remove('open'); }

@@ -144,6 +144,7 @@ const app = (() => {
             let isTarget = r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET') || r.JENIS.includes('RKO');
             let isStock = r.JENIS.includes('STOK') || r.JENIS.includes('STOCK');
 
+            // -- Logic KPI Global --
             if (r.TAHUN === selectedYear) {
                 if (isReal) {
                     kpiStats.curr[prodKey].real += r.TONASE;
@@ -157,6 +158,7 @@ const app = (() => {
             }
             if (r.TAHUN === (selectedYear - 1) && isReal) kpiStats.prev[prodKey].real += r.TONASE;
 
+            // -- Logic Ranking (Hanya Produk Aktif) --
             if (prodKey === activeProduct && r.TAHUN === selectedYear) {
                 if (r.PROVINSI && r.PROVINSI !== 'LAINNYA') {
                     dropdownProvs.add(r.PROVINSI);
@@ -203,15 +205,12 @@ const app = (() => {
         updateCard('NPK');
     };
 
-    // --- RENDER RANKING (PERBAIKAN LOGIKA DISINI) ---
     const renderRankings = (provData) => {
-        // 1. Buat Array Data
         let arr = Object.keys(provData).map(key => {
             const item = provData[key];
             let sortVal = 0;
             let displayVal = '';
 
-            // Subsidi = Sort by % | Retail = Sort by Tonase
             if (state.sector === 'SUBSIDI') {
                 sortVal = item.target > 0 ? (item.real / item.target) * 100 : 0;
                 displayVal = sortVal.toFixed(1) + '%';
@@ -224,29 +223,16 @@ const app = (() => {
                 name: key, 
                 val: sortVal,
                 display: displayVal,
-                rawReal: item.real // Untuk filter 0
+                rawReal: item.real 
             };
         });
 
-        // 2. Filter yang 0 realisasi
         let activeData = arr.filter(item => item.rawReal > 0);
-
-        // 3. Sort Tinggi ke Rendah
         activeData.sort((a,b) => b.val - a.val);
 
-        // 4. LOGIKA BARU: PISAHKAN TOP 5 DAN SISANYA
-        // Top 5: Index 0 - 4
-        const top5 = activeData.slice(0, 5);
-        
-        // Sisa: Index 5 ke bawah (Jika ada)
-        // Kita ambil "The Rest", lalu kita balik (Reverse) agar yang paling rendah/jelek muncul di atas list peringatan
-        // Dan kita ambil 5 terburuk dari sisa tersebut
-        const others = activeData.slice(5).reverse().slice(0, 5);
-
-        // --- RENDER TOP 5 ---
         const listTop5 = document.getElementById('list-top5');
-        if (top5.length > 0) {
-            listTop5.innerHTML = top5.map((item, i) => `
+        if (activeData.length > 0) {
+            listTop5.innerHTML = activeData.slice(0, 5).map((item, i) => `
                 <div class="rank-item">
                     <div class="rank-left">
                         <div class="rank-num best">${i+1}</div>
@@ -259,10 +245,10 @@ const app = (() => {
             listTop5.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Tidak ada data</div>';
         }
 
-        // --- RENDER PERLU PERHATIAN (SISA DARI TOP 5) ---
         const listOthers = document.getElementById('list-others');
-        if(others.length > 0) {
-            listOthers.innerHTML = others.map((item, i) => `
+        if(activeData.length > 5) {
+            const bottom5 = activeData.slice(5).reverse().slice(0, 5); // Ambil Sisa, lalu Balik, lalu Ambil 5 Terbawah
+            listOthers.innerHTML = bottom5.map((item, i) => `
                 <div class="rank-item">
                     <div class="rank-left">
                         <div class="rank-num warn"><i class="fas fa-exclamation"></i></div>
@@ -276,6 +262,7 @@ const app = (() => {
         }
     };
 
+    // --- CHART NASIONAL (DENGAN STOK) ---
     const renderNasionalChart = (nasStats) => {
         const ctx = document.getElementById('chartNasional').getContext('2d');
         if(chartNasional) chartNasional.destroy();
@@ -291,17 +278,25 @@ const app = (() => {
         const targetIcon = createDashedCircle('#999'); 
 
         chartNasional = new Chart(ctx, {
-            type: 'line',
+            type: 'bar', // Tipe Utama BAR agar Stok bisa tampil sebagai Bar
             data: {
                 labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
                 datasets: [
                     {
-                        label: 'Realisasi', data: data.real, borderColor: color, backgroundColor: gradient,
-                        fill: true, tension: 0.4, borderWidth: 3, pointRadius: 3
+                        label: 'Realisasi', data: data.real, type: 'line', // Override ke Line
+                        borderColor: color, backgroundColor: gradient,
+                        fill: true, tension: 0.4, borderWidth: 3, pointRadius: 3, order: 1
                     },
                     {
-                        label: 'Target', data: data.target, borderColor: '#666', borderDash: [6, 6],
-                        borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0, pointStyle: targetIcon 
+                        label: 'Target', data: data.target, type: 'line', // Override ke Line
+                        borderColor: '#666', borderDash: [6, 6],
+                        borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0, pointStyle: targetIcon, order: 0 
+                    },
+                    {
+                        label: 'Stok', data: data.stock, type: 'bar', // Tetap Bar
+                        backgroundColor: '#a8a29e80', // Warna Abu-abu (Stone) Transparan
+                        borderColor: '#a8a29e', borderWidth: 1, 
+                        barPercentage: 0.5, order: 2
                     }
                 ]
             },
@@ -314,6 +309,7 @@ const app = (() => {
         });
     };
 
+    // --- CHART PROVINSI ---
     const renderProvChart = () => {
         const provName = document.getElementById('dropdown-provinsi').value;
         const placeholder = document.getElementById('prov-placeholder');
@@ -354,21 +350,24 @@ const app = (() => {
         const targetIcon = createDashedCircle('#999');
 
         chartProvinsi = new Chart(ctx, {
-            type: 'line',
+            type: 'bar', // Tipe Utama BAR agar Stok muncul
             data: {
                 labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
                 datasets: [
                     {
-                        label: 'Realisasi', data: mReal, borderColor: colorMain, backgroundColor: gradient,
-                        fill: true, tension: 0.3, borderWidth: 2, pointRadius: 4
+                        label: 'Realisasi', data: mReal, type: 'line', 
+                        borderColor: colorMain, backgroundColor: gradient,
+                        fill: true, tension: 0.3, borderWidth: 2, pointRadius: 4, order: 1
                     },
                     {
-                        label: 'Target', data: mTarget, borderColor: '#999', borderDash: [4, 4], 
-                        borderWidth: 1, pointRadius: 0, tension: 0.3, pointStyle: targetIcon
+                        label: 'Target', data: mTarget, type: 'line', 
+                        borderColor: '#999', borderDash: [4, 4], 
+                        borderWidth: 1, pointRadius: 0, tension: 0.3, pointStyle: targetIcon, order: 0
                     },
                     {
-                        label: 'Stok', data: mStock, borderColor: '#a8a29e', borderDash: [], 
-                        showLine: true, borderWidth: 2, pointRadius: 0, fill: false
+                        label: 'Stok', data: mStock, type: 'bar', 
+                        backgroundColor: '#a8a29e80', borderColor: '#a8a29e', borderWidth: 1, 
+                        barPercentage: 0.5, order: 2
                     }
                 ]
             },

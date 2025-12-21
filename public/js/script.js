@@ -1,7 +1,7 @@
 /* =========================================================
    APP SCRIPT CONFIGURATION
    ========================================================= */
-// ⚠️ PENTING: PASTE URL /exec ANDA DISINI
+// ⚠️ GANTI LAGI URL INI DENGAN YANG /exec JIKA BERUBAH
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvQc8_pnXd6PrcU9bQZ28Trh0Ad0P5OHrCKs9203wwY-Sk7u9KvCeKKHpucoQmAyBunA/exec';
 
 const ADMIN_PASSWORD = 'pso123';
@@ -9,16 +9,18 @@ const ADMIN_PASSWORD = 'pso123';
 /* =========================================================
    GLOBAL VARIABLES
    ========================================================= */
-let rawData = [];     // Data mentah dari Google Sheet
-let currentSector = 'SUBSIDI'; // Default View
-let isAdminLoggedIn = false;
+let rawData = [];
+let currentSector = 'SUBSIDI'; // Default
 
 /* =========================================================
-   1. INITIALIZATION & FETCH DATA
+   1. INITIALIZATION
    ========================================================= */
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Set Tema
     const savedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(savedTheme);
+    
+    // 2. Ambil Data
     fetchData();
 });
 
@@ -29,30 +31,33 @@ function fetchData() {
     fetch(GOOGLE_SCRIPT_URL)
         .then(response => response.json())
         .then(data => {
-            // Cek apakah data berupa Array (Daftar panjang)
-            if (Array.isArray(data)) {
-                rawData = data; // Simpan data mentah
-                updateDashboard(); // Hitung & Tampilkan
+            console.log("Data Mentah:", data); // Cek di Console Browser
+            
+            if (Array.isArray(data) && data.length > 0) {
+                rawData = data;
+                updateDashboard(); // Hitung Data
+                
+                // Matikan Loading
+                if(loader) loader.style.display = 'none';
             } else {
-                console.error("Format Data Bukan Array:", data);
-                alert("Format data tidak dikenali. Cek Console.");
+                if(loader) loader.style.display = 'none';
+                alert("Data kosong atau format salah.");
             }
-            if(loader) loader.style.display = 'none';
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error(error);
             if(loader) loader.style.display = 'none';
-            alert("Gagal mengambil data. Pastikan URL Script benar.");
+            // Jangan alert error agar tidak mengganggu jika hanya masalah koneksi sesaat
         });
 }
 
 /* =========================================================
-   2. DASHBOARD LOGIC (CALCULATION)
+   2. DATA CALCULATION (PERBAIKAN LOGIKA)
    ========================================================= */
 function setSector(sector) {
     currentSector = sector;
     
-    // Update Menu Aktif
+    // Update Menu Aktif (Visual Sidebar)
     const navSubsidi = document.getElementById('nav-subsidi');
     const navRetail = document.getElementById('nav-retail');
     
@@ -61,51 +66,63 @@ function setSector(sector) {
     
     updateDashboard();
     
-    // Tutup sidebar di HP
-    if(window.innerWidth <= 768) toggleSidebar(); 
+    // Tutup Sidebar (Mobile)
+    if(window.innerWidth <= 768) toggleSidebar();
 }
 
 function updateDashboard() {
     if (rawData.length === 0) return;
 
-    // 1. FILTER DATA BERDASARKAN SEKTOR (SUBSIDI / RETAIL)
-    // Kita ambil baris data yang kolom "SEKTOR"-nya sesuai pilihan
-    const filteredData = rawData.filter(row => 
-        row.SEKTOR && row.SEKTOR.toUpperCase() === currentSector
-    );
-
-    // 2. HITUNG TOTAL (AGGREGATE)
-    // Kita jumlahkan kolom "TONASE" berdasarkan jenis "PRODUK"
+    // --- LOGIKA HITUNG BARU (LEBIH AMAN) ---
     let totalUrea = 0;
     let totalNPK = 0;
 
-    filteredData.forEach(row => {
-        const produk = row.PRODUK ? row.PRODUK.toUpperCase() : '';
-        const tonase = parseInt(row.TONASE) || 0; // Pastikan angka
+    rawData.forEach(row => {
+        // 1. BERSIHKAN DATA (Hapus Spasi & Jadi Huruf Besar)
+        // Contoh: " Urea " jadi "UREA"
+        const sektorRaw = row.SEKTOR ? row.SEKTOR.toString().toUpperCase().trim() : '';
+        const produkRaw = row.PRODUK ? row.PRODUK.toString().toUpperCase().trim() : '';
+        
+        // 2. BERSIHKAN ANGKA (Hapus titik ribuan jadi angka murni)
+        let tonase = 0;
+        if (typeof row.TONASE === 'string') {
+            // Ubah "1.250" jadi 1250 (Format Indonesia)
+            tonase = parseFloat(row.TONASE.replace(/\./g, '').replace(/,/g, '.')) || 0;
+        } else {
+            tonase = parseFloat(row.TONASE) || 0;
+        }
 
-        // Logika Penjumlahan
-        if (produk.includes('UREA') || produk.includes('NITREA')) {
-            totalUrea += tonase;
-        } else if (produk.includes('NPK') || produk.includes('PHONSKA')) {
-            totalNPK += tonase;
+        // 3. PENJUMLAHAN
+        // Cek apakah baris ini milik Sektor yang sedang dipilih (Subsidi/Retail)
+        if (sektorRaw === currentSector) {
+            
+            // Cek Jenis Produk
+            if (produkRaw.includes('UREA') || produkRaw.includes('NITREA')) {
+                totalUrea += tonase;
+            } 
+            else if (produkRaw.includes('NPK') || produkRaw.includes('PHONSKA') || produkRaw.includes('NPK')) {
+                totalNPK += tonase;
+            }
         }
     });
 
-    // 3. UPDATE TAMPILAN (DOM)
+    // --- UPDATE UI ---
+    // 1. Judul Halaman
     const pageTitle = document.querySelector('.page-info h2');
     if(pageTitle) pageTitle.innerText = currentSector === 'SUBSIDI' ? 'Subsidi' : 'Retail';
 
-    // Update Angka di Kartu
+    // 2. Masukkan Angka ke Kotak
     updateElement('val-urea', formatNumber(totalUrea));
     updateElement('val-npk', formatNumber(totalNPK));
 }
 
-// Fungsi Aman Update Teks
+// Helper: Update Teks HTML
 function updateElement(id, value) {
     const el = document.getElementById(id);
     if(el) el.innerText = value;
 }
 
+// Helper: Format Ribuan (1000 -> 1.000)
 function formatNumber(num) {
     return new Intl.NumberFormat('id-ID').format(num || 0);
 }
@@ -128,28 +145,22 @@ function setTheme(t) {
 
 function toggleSidebar() {
     const sb = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay'); // Pastikan ID ini 'overlay' bukan class
-    // Karena di CSS kita pakai class .overlay, mari kita sesuaikan selektornya:
-    const overlayEl = document.querySelector('.overlay');
-
+    const overlay = document.querySelector('.overlay'); 
     if(sb) sb.classList.toggle('show');
-    if(overlayEl) overlayEl.classList.toggle('active');
+    if(overlay) overlay.classList.toggle('active');
 }
 
 /* =========================================================
-   4. ADMIN LOGIN SYSTEM
+   4. ADMIN LOGIN
    ========================================================= */
+let isAdminLoggedIn = false;
+
 function openLoginModal() {
     if(isAdminLoggedIn) {
         isAdminLoggedIn = false;
         alert("Anda telah logout.");
-        const btn = document.getElementById('btn-login-trigger');
-        if(btn) btn.innerHTML = '<i class="fas fa-lock"></i> <span>Login Admin</span>';
-        
-        // Sembunyikan tombol kelola data jika ada
-        const adminBtn = document.getElementById('btn-admin-panel');
-        if(adminBtn) adminBtn.style.display = 'none';
-        
+        document.getElementById('btn-login-trigger').innerHTML = '<i class="fas fa-lock"></i> <span>Login Admin</span>';
+        if(document.getElementById('btn-admin-panel')) document.getElementById('btn-admin-panel').style.display = 'none';
         toggleSidebar();
     } else {
         openModal('loginModal');
@@ -158,20 +169,12 @@ function openLoginModal() {
 
 function attemptLogin() {
     const input = document.getElementById('adminPass');
-    if(!input) return;
-    
-    if(input.value === ADMIN_PASSWORD) {
+    if(input && input.value === ADMIN_PASSWORD) {
         isAdminLoggedIn = true;
         closeAllModals();
-        input.value = ''; 
-        
-        const btn = document.getElementById('btn-login-trigger');
-        if(btn) btn.innerHTML = '<i class="fas fa-sign-out-alt"></i> <span>Logout</span>';
-        
-        // Tampilkan tombol kelola data
-        const adminBtn = document.getElementById('btn-admin-panel');
-        if(adminBtn) adminBtn.style.display = 'flex';
-
+        input.value = '';
+        document.getElementById('btn-login-trigger').innerHTML = '<i class="fas fa-sign-out-alt"></i> <span>Logout</span>';
+        if(document.getElementById('btn-admin-panel')) document.getElementById('btn-admin-panel').style.display = 'flex';
         alert("Login Berhasil!");
         toggleSidebar();
     } else {
@@ -181,9 +184,9 @@ function attemptLogin() {
 
 function openModal(modalId) {
     const m = document.getElementById(modalId);
-    const b = document.querySelector('.backdrop'); // Selektor class backdrop
+    const b = document.querySelector('.backdrop');
     if(m) m.classList.add('open');
-    if(b) b.classList.add('open'); // Pastikan HTML punya div class="backdrop"
+    if(b) b.classList.add('open');
 }
 
 function closeAllModals() {
@@ -192,11 +195,9 @@ function closeAllModals() {
     document.querySelectorAll('.backdrop').forEach(b => b.classList.remove('open'));
 }
 
-// Tutup modal saat klik area gelap
 document.addEventListener('click', (e) => {
     if(e.target.classList.contains('backdrop') || e.target.classList.contains('overlay')) {
         closeAllModals();
-        // Tutup sidebar juga jika overlay diklik
         const sb = document.getElementById('sidebar');
         if(sb && sb.classList.contains('show')) toggleSidebar();
     }

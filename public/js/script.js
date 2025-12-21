@@ -86,7 +86,7 @@ const app = (() => {
         updateDashboard(); 
     };
 
-    // --- DASHBOARD LOGIC ---
+    // --- DASHBOARD LOGIC (AUTO TOP 1 PROVINSI) ---
     const updateDashboard = () => {
         const { rawData, selectedYear, sector, activeProduct } = state;
         
@@ -99,7 +99,6 @@ const app = (() => {
             }
         };
 
-        // Kumpulkan data ranking untuk mencari Top 1 nanti
         let rankStats = {}; 
 
         rawData.forEach(r => {
@@ -128,7 +127,7 @@ const app = (() => {
             }
             if (r.TAHUN === (selectedYear - 1) && isReal) kpiStats.prev[prodKey].real += r.TONASE;
 
-            // Logic Ranking Data
+            // Kumpulkan Data per Provinsi (Hanya Produk Aktif)
             if (prodKey === activeProduct && r.TAHUN === selectedYear) {
                 if (r.PROVINSI && r.PROVINSI !== 'LAINNYA') {
                     if (!rankStats[r.PROVINSI]) rankStats[r.PROVINSI] = { real: 0, target: 0 };
@@ -138,12 +137,22 @@ const app = (() => {
             }
         });
 
+        // Cari Provinsi Top 1
+        let bestProv = '';
+        let maxReal = -1;
+        for(const [prov, data] of Object.entries(rankStats)) {
+            if(data.real > maxReal) {
+                maxReal = data.real;
+                bestProv = prov;
+            }
+        }
+
         renderKPI(kpiStats);
         renderRankings(rankStats);
         renderNasionalChart(kpiStats.nasional);
         
-        // Render Provinsi secara OTOMATIS (Top 1)
-        renderProvChart(rankStats); 
+        // Render Grafik Provinsi Otomatis (Tanpa Dropdown)
+        renderProvChart(bestProv); 
     };
 
     const renderKPI = (stats) => {
@@ -220,7 +229,7 @@ const app = (() => {
         }
     };
 
-    // --- CHART CONFIG (POSISI TENGAH & BENTUK SESUAI PERMINTAAN) ---
+    // --- CHART CONFIG ---
     const getChartOptions = () => ({
         responsive: true, 
         maintainAspectRatio: false,
@@ -238,10 +247,7 @@ const app = (() => {
                     generateLabels: (chart) => {
                         return chart.data.datasets.map((dataset, i) => {
                             let color = dataset.type === 'line' ? dataset.borderColor : dataset.backgroundColor;
-                            
-                            // LOGIKA BENTUK: STOK = RECT, SISANYA = CIRCLE
                             let shape = dataset.label === 'Stok' ? 'rect' : 'circle'; 
-
                             return {
                                 text: dataset.label,
                                 fillStyle: color,        
@@ -311,40 +317,26 @@ const app = (() => {
         });
     };
 
-    // --- CHART PROVINSI (OTOMATIS PILIH TOP 1) ---
-    const renderProvChart = (rankStats) => {
+    // --- CHART PROVINSI (TERIMA NAMA PROVINSI LANGSUNG) ---
+    const renderProvChart = (targetProv) => {
         const placeholder = document.getElementById('prov-placeholder');
         const ctx = document.getElementById('chartProvinsi').getContext('2d');
         const titleEl = document.getElementById('prov-chart-title');
-
-        // 1. Cari Provinsi Ranking 1 (Terbaik Realisasi)
-        let bestProv = '';
-        let maxReal = -1;
-
-        if (rankStats) {
-            for (const [prov, data] of Object.entries(rankStats)) {
-                if (data.real > maxReal) {
-                    maxReal = data.real;
-                    bestProv = prov;
-                }
-            }
-        }
-
-        if (!bestProv) {
+        
+        if (!targetProv) {
             placeholder.style.display = 'flex';
             if(chartProvinsi) chartProvinsi.clear();
-            titleEl.innerText = "Data Provinsi Tidak Tersedia";
+            titleEl.innerText = "Detail Provinsi (Tidak Ada Data)";
             return;
         }
         
         placeholder.style.display = 'none';
-        titleEl.innerText = `Detail: ${bestProv} (Tertinggi)`;
+        titleEl.innerText = `Detail: ${targetProv} (Tertinggi)`; // Update Judul
 
-        // 2. Siapkan Data Bulanan untuk Provinsi Terpilih
         let mReal = Array(12).fill(0), mTarget = Array(12).fill(0), mStock = Array(12).fill(0);
 
         state.rawData.forEach(r => {
-            if (r.TAHUN !== state.selectedYear || r.PROVINSI !== bestProv) return;
+            if (r.TAHUN !== state.selectedYear || r.PROVINSI !== targetProv) return;
             let isSectorMatch = (state.sector === 'SUBSIDI') ? r.SEKTOR.includes('SUBSIDI') : r.SEKTOR.includes('RETAIL');
             if (!isSectorMatch) return;
 

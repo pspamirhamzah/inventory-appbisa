@@ -107,6 +107,7 @@
             </div>
 
             <div class="charts-row">
+                
                 <div class="chart-section">
                     <div class="section-header">
                         <div class="section-title">Realisasi Nasional</div>
@@ -122,7 +123,7 @@
                      <div class="section-header">
                         <div class="section-title">Realisasi Per Provinsi</div>
                         <div class="select-wrapper">
-                             <select id="prov-select" onchange="renderProvChart()" style="border: 1px solid #333; background: #1a1a1a; color: white; padding: 5px; border-radius: 5px; outline: none; font-size: 11px;">
+                             <select id="prov-select" onchange="renderProvChart()" style="border: 1px solid #333; background: #1a1a1a; color: white; padding: 5px; border-radius: 5px; outline: none; font-size: 11px; cursor: pointer;">
                                  <option value="">-- Pilih Provinsi --</option>
                              </select>
                         </div>
@@ -134,11 +135,11 @@
             <div class="ranking-grid">
                 <div class="chart-section">
                     <div class="section-header"><div class="section-title">🏆 Top 5 Provinsi</div></div>
-                    <div id="list-best" class="rank-list"></div>
+                    <div id="list-best" class="rank-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
                 <div class="chart-section">
                     <div class="section-header"><div class="section-title">⚠️ Perlu Perhatian</div></div>
-                    <div id="list-warn" class="rank-list"></div>
+                    <div id="list-warn" class="rank-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
             </div>
             
@@ -150,8 +151,6 @@
     </main>
 
     <div class="backdrop" id="modalBackdrop" onclick="closeAllModals()"></div>
-    
     <script src="js/script.js"></script>
-
 </body>
 </html>

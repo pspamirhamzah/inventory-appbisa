@@ -251,11 +251,13 @@ const app = (() => {
                 position: 'top',
                 align: 'end',
                 labels: { 
-                    usePointStyle: true, // KUNCI: Gunakan Point, bukan Kotak
+                    usePointStyle: true, 
                     boxWidth: 6,         // UKURAN DOT: Kecil (6px)
-                    boxHeight: 6,        // Memastikan bulat sempurna jika rasio font berubah
+                    boxHeight: 6,        
                     padding: 15,
-                    font: { size: 11 }
+                    font: { size: 11 },
+                    // Fungsi ini sekarang tidak lagi memaksa semua jadi circle
+                    // Biarkan pointStyle dari dataset yang menentukan bentuknya
                 } 
             },
             tooltip: { 
@@ -326,7 +328,7 @@ const app = (() => {
                         borderColor: 'rgba(75, 85, 99, 0.8)', // Untuk warna Dot Legenda
                         borderWidth: 0, 
                         barPercentage: 0.5, 
-                        pointStyle: 'circle', // Paksa Bar jadi Dot di Legenda
+                        pointStyle: 'rect', // KOTAK (RECTANGLE) UNTUK LEGENDA STOK
                         order: 2
                     }
                 ]
@@ -412,7 +414,7 @@ const app = (() => {
                         borderColor: 'rgba(75, 85, 99, 0.8)', // Dot Color
                         borderWidth: 0, 
                         barPercentage: 0.5, 
-                        pointStyle: 'circle', // Dot Legend
+                        pointStyle: 'rect', // KOTAK (RECTANGLE) UNTUK LEGENDA STOK
                         order: 2
                     }
                 ]

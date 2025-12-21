@@ -109,33 +109,44 @@ function initDashboard(jsonString) {
 }
 
 // =========================================================
-// 4. ADMIN FEATURES (AUTO LOGIN)
+// 4. ADMIN FEATURES (MANUAL LOGIN - DENGAN PASSWORD)
 // =========================================================
 
-// Password Admin Hardcoded (Untuk akses cepat)
-// Pastikan password ini SAMA dengan yang ada di Code.gs
+// Password tetap kita simpan di sini untuk verifikasi awal & pengiriman data
 const CLIENT_PASSWORD = 'pso123'; 
 
 function openLoginModal() {
     if(isAdminLoggedIn) {
-        // LOGOUT
+        // LOGOUT LOGIC
         isAdminLoggedIn = false;
         document.getElementById('btn-login-trigger').innerHTML = '<i class="fas fa-lock"></i> <span>Login Admin</span>';
         if(document.getElementById('btn-admin-panel')) document.getElementById('btn-admin-panel').style.display = 'none'; 
         toggleSidebar();
-        alert("Mode Admin Non-Aktif.");
+        alert("Anda telah logout.");
     } else {
-        // AUTO LOGIN (Tanpa ketik password)
+        // BUKA MODAL PASSWORD
+        if(!document.getElementById('loginModal')) createLoginModalHTML();
+        openModal('loginModal');
+    }
+}
+
+function attemptLogin() {
+    const pass = document.getElementById('adminPass').value;
+    
+    // Cek apakah password yang diketik sama dengan 'pso123'
+    if(pass === CLIENT_PASSWORD) { 
         isAdminLoggedIn = true;
+        closeAllModals();
+        document.getElementById('adminPass').value = ''; // Bersihkan input
+        
+        // Ubah Tampilan Menu
         document.getElementById('btn-login-trigger').innerHTML = '<i class="fas fa-sign-out-alt"></i> <span>Logout</span>';
         if(document.getElementById('btn-admin-panel')) document.getElementById('btn-admin-panel').style.display = 'flex';
+        
         toggleSidebar();
-        
-        // Langsung buka panel data
-        openAdminPanel();
-        
-        // Opsional: Beri notifikasi kecil
-        // alert("Mode Admin Aktif!"); 
+        openAdminPanel(); // Langsung buka tabel
+    } else {
+        alert("Password Salah!");
     }
 }
 

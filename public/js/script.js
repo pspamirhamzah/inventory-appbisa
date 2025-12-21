@@ -1,22 +1,19 @@
 /* =========================================================
-   1. CONFIGURATION
+   1. KONFIGURASI
    ========================================================= */
-// ⚠️ PASTE URL /exec ANDA DISINI
-const API_URL = 'https://script.google.com/macros/s/AKfycbzTg_zhIghrwMz5X2SMH30i-QWE58eIgYjXVWurPKxdOyvSVXD76rYf57dOVwDydiwR0g/exec';
+// ⚠️ PASTE URL /exec DARI APPS SCRIPT BARU ANDA DISINI
+const API_URL = 'https://script.google.com/macros/s/AKfycbzFanoakpPL3NaMh8CqbolDF5wo9iVb6ikIKQavQh15aGJYBCj7rGQdWyE3sMC911wxdA/exec'; 
 const ADMIN_PASSWORD = 'pso123';
 
 /* =========================================================
-   2. GLOBAL VARIABLES
+   2. VARIABEL GLOBAL & KAMUS DATA
    ========================================================= */
 let rawData = [];
 let currentSector = 'SUBSIDI'; 
-let selectedYear = new Date().getFullYear(); 
-let isAdminLoggedIn = false;
+let selectedYear = new Date().getFullYear(); // Default Tahun Ini (2025)
 
-// Label Bulan untuk Grafik
-const indoMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-
-// Kamus Bulan (Untuk mengatasi teks "Jan", "January", dll)
+// KAMUS BULAN: Menerjemahkan Teks Spreadsheet -> Angka Grafik
+// Format: "Teks di Excel" : Index (0=Jan, 11=Des)
 const MONTH_MAP = {
     'JAN': 0, 'JANUARI': 0,
     'FEB': 1, 'FEBRUARI': 1,
@@ -25,161 +22,159 @@ const MONTH_MAP = {
     'MEI': 4, 'MAY': 4,
     'JUN': 5, 'JUNI': 5,
     'JUL': 6, 'JULI': 6,
-    'AGU': 7, 'AGUSTUS': 7,
+    'AGU': 7, 'AGUSTUS': 7, 'AUG': 7,
     'SEP': 8, 'SEPTEMBER': 8,
     'OKT': 9, 'OKTOBER': 9,
     'NOV': 10, 'NOVEMBER': 10,
     'DES': 11, 'DESEMBER': 11
 };
 
+// Label untuk Sumbu X Grafik
+const CHART_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+let chartNasional; 
+let isAdminLoggedIn = false;
+
 /* =========================================================
-   3. INITIALIZATION
+   3. INIT & LOAD DATA
    ========================================================= */
 window.onload = function() {
+    // 1. Cek Tema
     const savedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(savedTheme);
+
+    // 2. Set Tampilan Awal Tahun
+    const yearDisplay = document.querySelector('.page-info p');
+    if(yearDisplay) yearDisplay.innerText = `Data Tahun: ${selectedYear}`;
+
+    // 3. Ambil Data
     loadData();
-    
-    // Update label tahun
-    const yearLabel = document.querySelector('.page-info p');
-    if(yearLabel) yearLabel.innerText = `Data Tahun: ${selectedYear}`;
 };
 
 function loadData() {
     const loader = document.getElementById('loader');
     if(loader) loader.style.display = 'flex';
 
+    console.log("Mengambil data dari API...");
+
     fetch(API_URL)
     .then(response => response.json())
     .then(data => {
-        if(data.error) { 
+        if(data.error) {
             console.error("Server Error:", data.error);
+            alert("Error: " + data.error);
             if(loader) loader.style.display = 'none';
             return;
         }
 
-        // PROSES DATA
+        // PROSES DATA TEKS MENJADI ANGKA
         processData(data);
         
-        // DEBUGGING: Cek di Console Browser (Tekan F12)
-        console.log(`Total Data: ${data.length}`);
-        console.log(`Data Tahun ${selectedYear}: ${rawData.filter(r => r.TAHUN == selectedYear).length}`);
-
-        updateAll();
+        // HITUNG & TAMPILKAN DASHBOARD
+        updateDashboard();
         
         if(loader) loader.style.display = 'none';
     })
     .catch(error => {
         console.error('Fetch Error:', error);
+        // alert("Gagal koneksi. Cek Console.");
         if(loader) loader.style.display = 'none';
     });
 }
 
 function processData(data) {
     if (!Array.isArray(data)) return;
-    
+
     rawData = data.map(r => {
-        // 1. BERSIHKAN ANGKA TONASE (Hapus titik ribuan)
-        let val = r['TONASE'];
-        if (typeof val === 'string') {
-            val = parseFloat(val.replace(/\./g, '').replace(/,/g, '.')) || 0;
-        } else {
-            val = Number(val) || 0;
-        }
-
-        // 2. AMBIL TAHUN (Pastikan jadi Angka)
-        let year = parseInt(r['TAHUN']); 
+        // A. BERSIHKAN ANGKA TONASE
+        // Data dari getDisplayValues() pasti STRING, misal: "1250" atau "1250,50"
+        let valStr = String(r['TONASE']); 
         
-        // 3. AMBIL BULAN (Teks atau Tanggal)
-        let rawBulan = String(r['BULAN'] || '').toUpperCase().trim();
-        let monthIdx = -1;
+        // Ganti koma jadi titik (jika ada desimal pakai koma)
+        // Hapus titik ribuan (jika ada) - Safety measure
+        let cleanVal = valStr.replace(/\./g, '').replace(/,/g, '.');
+        let val = parseFloat(cleanVal) || 0;
 
-        // Cek apakah ini Format Tanggal ISO (2024-12-31...)
-        if (rawBulan.includes('T') && rawBulan.includes('-')) {
-            let d = new Date(r['BULAN']);
-            if (!isNaN(d.getTime())) {
-                // Konversi UTC ke WIB manual (Tambah 7 jam) biar tidak mundur ke 2024
-                // Atau sederhananya: Ambil Bulan dari string-nya langsung jika format ISO
-                // Tapi cara paling aman: Gunakan Timezone Browser User (WIB)
-                monthIdx = d.getMonth(); 
-                
-                // Jika tahun kosong, ambil dari tanggal
-                if (!year) year = d.getFullYear();
-            }
-        } 
-        // Cek apakah ini Teks ("JAN", "FEB")
-        else if (MONTH_MAP.hasOwnProperty(rawBulan)) {
-            monthIdx = MONTH_MAP[rawBulan];
+        // B. BERSIHKAN TAHUN
+        let year = parseInt(r['TAHUN']) || 0;
+        if (year === 0) year = new Date().getFullYear(); // Fallback
+
+        // C. BERSIHKAN BULAN (Mapping Teks -> Angka)
+        let txtBulan = String(r['BULAN'] || '').toUpperCase().trim();
+        let monthIdx = -1;
+        
+        if (MONTH_MAP.hasOwnProperty(txtBulan)) {
+            monthIdx = MONTH_MAP[txtBulan];
         }
 
-        // Fallback Tahun
-        if (!year) year = new Date().getFullYear();
-
+        // D. KEMBALIKAN DATA BERSIH
         return {
             ...r,
             TAHUN: year,
             BULAN_IDX: monthIdx,
-            // HAPUS TRIM/UPPERCASE DISINI AGAR FILTER TIDAK ERROR
-            // Kita lakukan normalisasi SAAT FILTERING saja
+            // Simpan versi Huruf Besar untuk memudahkan filter (case-insensitive)
             SEKTOR_RAW: String(r['SEKTOR'] || '').toUpperCase().trim(),
             PRODUK_RAW: String(r['PRODUK'] || '').toUpperCase().trim(),
             JENIS_RAW: String(r['JENIS'] || '').toUpperCase().trim(),
             PROVINSI_RAW: String(r['PROVINSI'] || '').toUpperCase().trim(),
-            TONASE: val,
-            _rowIndex: r['_rowIndex']
+            TONASE: val
         };
     });
-    
-    // Auto-Select Tahun jika data tahun ini kosong
-    const dataThisYear = rawData.filter(r => r.TAHUN === selectedYear);
-    if (dataThisYear.length === 0 && rawData.length > 0) {
-        // Cari tahun yang ada datanya
-        const uniqueYears = [...new Set(rawData.map(item => item.TAHUN))].sort((a,b)=>b-a);
-        if(uniqueYears.length > 0) {
+
+    // AUTO-DETECT TAHUN: Jika tahun yang dipilih kosong, pindah ke tahun terbaru yang ada datanya
+    const hasDataThisYear = rawData.some(r => r.TAHUN === selectedYear);
+    if (!hasDataThisYear && rawData.length > 0) {
+        const uniqueYears = [...new Set(rawData.map(r => r.TAHUN))].sort((a,b) => b-a);
+        if (uniqueYears.length > 0) {
             selectedYear = uniqueYears[0];
-            const yearLabel = document.querySelector('.page-info p');
-            if(yearLabel) yearLabel.innerText = `Data Tahun: ${selectedYear}`;
+            console.log("Auto-switch tahun ke:", selectedYear);
+            const yearDisplay = document.querySelector('.page-info p');
+            if(yearDisplay) yearDisplay.innerText = `Data Tahun: ${selectedYear}`;
         }
     }
 }
 
 /* =========================================================
-   4. DASHBOARD LOGIC
+   4. LOGIKA DASHBOARD
    ========================================================= */
 function setSector(sector) {
     currentSector = sector;
     
-    // Update Menu Visual
+    // Update Menu Aktif
     const navSubsidi = document.getElementById('nav-subsidi');
     const navRetail = document.getElementById('nav-retail');
     if(navSubsidi) navSubsidi.className = sector === 'SUBSIDI' ? 'nav-item active' : 'nav-item';
     if(navRetail) navRetail.className = sector === 'RETAIL' ? 'nav-item active' : 'nav-item';
     
-    const title = document.querySelector('.page-info h2');
-    if(title) title.innerText = sector === 'SUBSIDI' ? 'Subsidi' : 'Retail';
+    // Update Judul Halaman
+    document.querySelector('.page-info h2').innerText = sector === 'SUBSIDI' ? 'Subsidi' : 'Retail';
 
-    updateAll();
+    updateDashboard();
+
+    // Tutup sidebar di HP
     if(window.innerWidth <= 768) toggleSidebar();
 }
 
-function updateAll() {
+function updateDashboard() {
     if (rawData.length === 0) return;
 
+    // --- VARIABEL PENAMPUNG ---
     let totalUrea = 0;
     let totalNPK = 0;
-    let provStats = {};
+    let provStats = {}; 
     
-    // Data Grafik
+    // Data Grafik (12 Bulan)
     let chartData = {
         UREA: { real: Array(12).fill(0), target: Array(12).fill(0) },
         NPK: { real: Array(12).fill(0), target: Array(12).fill(0) }
     };
 
+    // --- LOOPING DATA ---
     rawData.forEach(r => {
-        // 1. FILTER TAHUN (Pakai == biar "2025" sama dengan 2025)
-        if (r.TAHUN != selectedYear) return;
+        // 1. FILTER TAHUN
+        if (r.TAHUN !== selectedYear) return;
 
-        // 2. FILTER SEKTOR (Pakai Includes)
+        // 2. FILTER SEKTOR (Flexible)
         let isSectorMatch = false;
         if (currentSector === 'SUBSIDI') {
             isSectorMatch = r.SEKTOR_RAW.includes('SUBSIDI') && !r.SEKTOR_RAW.includes('NON');
@@ -188,63 +183,64 @@ function updateAll() {
         }
         if (!isSectorMatch) return;
 
-        // 3. IDENTIFIKASI JENIS & PRODUK (Pakai Includes)
+        // 3. IDENTIFIKASI JENIS (Realisasi vs Target)
         const isReal = r.JENIS_RAW.includes('REALISASI') || r.JENIS_RAW.includes('PENJUALAN');
         const isTarget = r.JENIS_RAW.includes('RKAP') || r.JENIS_RAW.includes('TARGET');
-        
-        let prodKey = '';
-        if (r.PRODUK_RAW.includes('UREA') || r.PRODUK_RAW.includes('NITREA')) prodKey = 'UREA';
-        else if (r.PRODUK_RAW.includes('NPK') || r.PRODUK_RAW.includes('PHONSKA')) prodKey = 'NPK';
 
-        if (!prodKey) return; 
+        // 4. IDENTIFIKASI PRODUK (Urea / NPK)
+        let pKey = '';
+        if (r.PRODUK_RAW.includes('UREA') || r.PRODUK_RAW.includes('NITREA')) pKey = 'UREA';
+        else if (r.PRODUK_RAW.includes('NPK') || r.PRODUK_RAW.includes('PHONSKA')) pKey = 'NPK';
 
-        // 4. AGGREGASI
+        if (!pKey) return; 
+
+        // --- AGGREGASI ---
         if (isReal) {
-            if (prodKey === 'UREA') totalUrea += r.TONASE;
+            // Kartu Atas (Total Tahunan)
+            if (pKey === 'UREA') totalUrea += r.TONASE;
             else totalNPK += r.TONASE;
 
-            // Ranking
+            // Ranking Provinsi
             let prov = r.PROVINSI_RAW || 'LAINNYA';
             if (!provStats[prov]) provStats[prov] = 0;
             provStats[prov] += r.TONASE;
 
-            // Grafik
-            if (r.BULAN_IDX >= 0 && r.BULAN_IDX < 12) {
-                chartData[prodKey].real[r.BULAN_IDX] += r.TONASE;
-            }
-        } else if (isTarget) {
-            // Grafik Target
-            if (r.BULAN_IDX >= 0 && r.BULAN_IDX < 12) {
-                chartData[prodKey].target[r.BULAN_IDX] += r.TONASE;
-            }
+            // Grafik Bulanan (Jika bulan valid 0-11)
+            if (r.BULAN_IDX >= 0) chartData[pKey].real[r.BULAN_IDX] += r.TONASE;
+        } 
+        else if (isTarget) {
+            // Grafik Target Bulanan
+            if (r.BULAN_IDX >= 0) chartData[pKey].target[r.BULAN_IDX] += r.TONASE;
         }
     });
 
-    // UPDATE UI
+    // --- UPDATE UI ---
     updateElement('val-urea', formatNumber(totalUrea));
     updateElement('val-npk', formatNumber(totalNPK));
-    
+
     renderRanking(provStats);
     renderCharts(chartData);
 }
 
-function renderRanking(provStats) {
-    const container = document.getElementById('top-province-list');
-    if(!container) return;
+function renderRanking(stats) {
+    const list = document.getElementById('top-province-list');
+    if (!list) return;
 
-    // Mapping ulang nama provinsi agar Title Case (Agar Rapi di Tampilan)
-    // Karena tadi di-Upper Case semua
-    let sorted = Object.keys(provStats).map(key => ({ name: toTitleCase(key), val: provStats[key] }));
+    // Ubah Object ke Array -> Sort Besar ke Kecil
+    let sorted = Object.keys(stats).map(key => ({ 
+        name: toTitleCase(key), 
+        val: stats[key] 
+    }));
     sorted.sort((a, b) => b.val - a.val);
 
     let html = '';
-    sorted.slice(0, 5).forEach((item, index) => {
-        const isFirst = index === 0;
+    sorted.slice(0, 5).forEach((item, idx) => {
+        const isFirst = idx === 0;
         html += `
         <div class="rank-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-subtle);">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <div class="rank-badge ${isFirst ? 'badge-1' : ''}" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: bold; border: 1px solid var(--border-color);">
-                    ${index + 1}
+                <div class="rank-badge ${isFirst ? 'badge-1' : ''}" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: bold; border: 1px solid var(--border-color); font-size: 12px;">
+                    ${idx + 1}
                 </div>
                 <div>
                     <span class="rank-name" style="font-weight: 600; font-size: 13px; display: block;">${item.name}</span>
@@ -254,18 +250,17 @@ function renderRanking(provStats) {
             <div class="rank-val" style="font-weight: 700; font-size: 13px;">${formatNumber(item.val)}</div>
         </div>`;
     });
-    
-    if (sorted.length === 0) html = `<p style="text-align:center; padding:20px; font-size:12px; color:grey">Tidak ada data realisasi tahun ${selectedYear}</p>`;
-    container.innerHTML = html;
-}
 
-function toTitleCase(str) {
-    return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+    if (sorted.length === 0) {
+        html = `<p style="text-align:center; padding:20px; font-size:12px; color:grey">Tidak ada data realisasi tahun ${selectedYear}</p>`;
+    }
+    list.innerHTML = html;
 }
 
 function renderCharts(data) {
+    // Tampilkan Grafik UREA sebagai default
+    // Jika ingin NPK, tinggal ganti parameter data.UREA jadi data.NPK
     drawChart('chartNasional', data.UREA.real, data.UREA.target, 'UREA');
-    // Jika ingin grafik NPK juga, bisa panggil fungsi drawChart lagi ke canvas ID lain
 }
 
 function drawChart(canvasId, dReal, dTarget, label) {
@@ -274,21 +269,27 @@ function drawChart(canvasId, dReal, dTarget, label) {
 
     const context = ctx.getContext('2d');
     const styles = getComputedStyle(document.body);
-    const colorMain = label === 'UREA' ? styles.getPropertyValue('--color-urea').trim() || '#F7DA19' : styles.getPropertyValue('--color-npk').trim() || '#055AA1';
+    
+    // Warna sesuai Produk
+    const colorMain = label === 'UREA' ? 
+        (styles.getPropertyValue('--color-urea').trim() || '#F7DA19') : 
+        (styles.getPropertyValue('--color-npk').trim() || '#055AA1');
+    
     const colorText = styles.getPropertyValue('--text-secondary').trim() || '#888';
-    
+
+    // Hapus chart lama agar tidak numpuk
     if (canvasId === 'chartNasional' && chartNasional) chartNasional.destroy();
-    
+
     const config = {
         type: 'line',
         data: {
-            labels: indoMonths,
+            labels: CHART_LABELS,
             datasets: [
                 {
                     label: 'Realisasi',
                     data: dReal,
                     borderColor: colorMain,
-                    backgroundColor: colorMain + '20',
+                    backgroundColor: colorMain + '20', // Transparan
                     borderWidth: 3,
                     tension: 0.4,
                     fill: true,
@@ -310,12 +311,25 @@ function drawChart(canvasId, dReal, dTarget, label) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: true, position: 'top', align: 'end', labels: { color: colorText, font: { size: 11 } } },
+                legend: { 
+                    display: true, 
+                    position: 'top', 
+                    align: 'end', 
+                    labels: { color: colorText, font: { size: 11 }, boxWidth: 10 } 
+                },
                 tooltip: { mode: 'index', intersect: false }
             },
             scales: {
-                x: { grid: { display: false }, ticks: { color: colorText, font: { size: 10 } } },
-                y: { border: { display: false }, grid: { color: '#333333' }, ticks: { color: colorText, font: { size: 10 } }, beginAtZero: true }
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { color: colorText, font: { size: 10 } } 
+                },
+                y: { 
+                    border: { display: false }, 
+                    grid: { color: '#333333' }, 
+                    ticks: { color: colorText, font: { size: 10 } }, 
+                    beginAtZero: true 
+                }
             }
         }
     };
@@ -334,6 +348,12 @@ function updateElement(id, value) {
 
 function formatNumber(num) {
     return new Intl.NumberFormat('id-ID').format(num || 0);
+}
+
+function toTitleCase(str) {
+    return str.replace(/\w\S*/g, function(txt){
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    });
 }
 
 function toggleTheme() {
@@ -355,6 +375,7 @@ function toggleSidebar() {
     if(overlay) overlay.classList.toggle('active');
 }
 
+// ADMIN PANEL LOGIC
 function openLoginModal() {
     if(isAdminLoggedIn) {
         isAdminLoggedIn = false;
@@ -377,7 +398,7 @@ function attemptLogin() {
         if(document.getElementById('btn-admin-panel')) document.getElementById('btn-admin-panel').style.display = 'flex';
         alert("Login Berhasil!");
         toggleSidebar();
-        openAdminPanel();
+        openAdminPanel(); // Buka panel admin otomatis setelah login
     } else {
         alert("Password Salah!");
     }
@@ -393,10 +414,18 @@ function renderAdminTable() {
     const tbody = document.getElementById('adminTableBody');
     if(!tbody) return;
     tbody.innerHTML = '';
+    // Tampilkan 50 data teratas
     rawData.slice(0, 50).forEach(row => {
         let tr = document.createElement('tr');
         tr.style.borderBottom = "1px solid var(--border-subtle)";
-        tr.innerHTML = `<td style="padding:10px;"><button class="btn btn-primary" style="padding:4px 8px; font-size:11px;">Edit</button></td><td style="padding:10px; font-size:12px;">${row['SEKTOR_RAW']}</td><td style="padding:10px; font-size:12px;">${row['PRODUK_RAW']}</td><td style="padding:10px; font-size:12px;">${row['JENIS_RAW']}</td><td style="padding:10px; font-size:12px;">${row['PROVINSI_RAW']}</td><td style="padding:10px; font-size:12px;">${formatNumber(row['TONASE'])}</td>`;
+        tr.innerHTML = `
+            <td style="padding:10px;"><button class="btn btn-primary" style="padding:4px 8px; font-size:11px;" onclick='alert("Fitur Edit: Gunakan POST ke Apps Script")'>Edit</button></td>
+            <td style="padding:10px; font-size:12px;">${row['SEKTOR_RAW']}</td>
+            <td style="padding:10px; font-size:12px;">${row['PRODUK_RAW']}</td>
+            <td style="padding:10px; font-size:12px;">${row['JENIS_RAW']}</td>
+            <td style="padding:10px; font-size:12px;">${row['PROVINSI_RAW']}</td>
+            <td style="padding:10px; font-size:12px;">${formatNumber(row['TONASE'])}</td>
+        `;
         tbody.appendChild(tr);
     });
 }
@@ -420,8 +449,9 @@ function createLoginModalHTML() {
     div.innerHTML = `<div class="modal" id="loginModal"><div class="modal-header"><h3 class="modal-title">Admin Login</h3><button class="btn-close" onclick="closeAllModals()">&times;</button></div><div class="modal-body"><input type="password" id="adminPass" class="form-control" placeholder="Password..."></div><div class="modal-footer"><button class="btn btn-primary" onclick="attemptLogin()">Masuk</button></div></div>`;
     document.body.appendChild(div);
 }
+
 function createAdminPanelHTML() {
     const div = document.createElement('div');
-    div.innerHTML = `<div class="modal large" id="adminPanelModal" style="width:95%; max-width:800px;"><div class="modal-header"><h3 class="modal-title">Kelola Data</h3><button class="btn-close" onclick="closeAllModals()">&times;</button></div><div class="modal-body"><div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; color:var(--text-primary);"><thead><tr style="border-bottom:1px solid var(--border-color); text-align:left;"><th style="padding:10px;">Aksi</th><th>Sektor</th><th>Produk</th><th>Jenis</th><th>Provinsi</th><th>Tonase</th></tr></thead><tbody id="adminTableBody"></tbody></table></div></div></div>`;
+    div.innerHTML = `<div class="modal large" id="adminPanelModal" style="width:95%; max-width:800px;"><div class="modal-header"><h3 class="modal-title">Kelola Data</h3><button class="btn-close" onclick="closeAllModals()">&times;</button></div><div class="modal-body"><div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; color:var(--text-primary);"><thead><tr style="border-bottom:1px solid var(--border-color); text-align:left;"><th style="padding:10px;">Aksi</th><th>Sektor</th><th>Produk</th><th>Jenis</th><th>Prov</th><th>Tonase</th></tr></thead><tbody id="adminTableBody"></tbody></table></div></div></div>`;
     document.body.appendChild(div);
 }

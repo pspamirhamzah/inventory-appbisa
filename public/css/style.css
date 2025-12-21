@@ -1,136 +1,232 @@
 /* =========================================
-   CUSTOM DROPDOWN (GITHUB STYLE)
+   1. VARIABLES & THEME SETUP
    ========================================= */
+:root {
+    --bg-body: #0d1117; /* GitHub Dark Background */
+    --bg-sidebar: #010409;
+    --bg-card: #161b22;
+    --bg-hover: #21262d;
+    
+    --text-primary: #c9d1d9;
+    --text-secondary: #8b949e;
+    --text-muted: #484f58;
+    
+    --border-color: #30363d;
+    --border-subtle: #21262d;
+    
+    /* Brand Colors (Tetap sesuai tema Anda) */
+    --color-urea: #fbbf24;
+    --color-npk: #38bdf8;
+    --color-success: #4ade80;
+    --color-danger: #ff5252;
+    --color-accent-1: #ffffff;
 
-/* Sembunyikan Select Asli tapi tetap ada di DOM */
-select.custom-select {
-    display: none !important;
+    --sidebar-width: 260px;
+    --header-height: 64px;
+    --card-radius: 6px; /* Lebih kotak ala GitHub */
+    --transition: 0.2s ease;
 }
 
-/* Container utama untuk Dropdown Palsu */
+/* =========================================
+   2. GLOBAL RESET
+   ========================================= */
+* { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    font-size: 14px;
+}
+
+/* =========================================
+   3. SIDEBAR
+   ========================================= */
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    display: flex; flex-direction: column;
+    padding: 20px 16px;
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 50;
+    transition: transform var(--transition);
+    transform: translateX(0);
+}
+.sidebar.closed { transform: translateX(-100%); }
+
+.brand { padding-bottom: 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; }
+.brand h2 { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0; }
+.brand h2 span { color: var(--color-urea); }
+.brand p { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+.nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px; border-radius: 6px; cursor: pointer;
+    color: var(--text-secondary); font-size: 14px; font-weight: 500;
+    transition: all 0.2s; margin-bottom: 2px;
+}
+.nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.nav-item.active { background: var(--bg-hover); color: var(--text-primary); font-weight: 600; border-left: 3px solid var(--color-urea); }
+
+/* =========================================
+   4. MAIN CONTENT
+   ========================================= */
+.main-content {
+    flex: 1; margin-left: var(--sidebar-width);
+    display: flex; flex-direction: column;
+    height: 100vh; overflow: hidden;
+    transition: margin-left var(--transition);
+}
+.main-content.closed { margin-left: 0; }
+
+header {
+    height: var(--header-height); background: var(--bg-body); border-bottom: 1px solid var(--border-color);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 32px; flex-shrink: 0;
+}
+.header-left { display: flex; align-items: center; gap: 15px; }
+.page-title h1 { font-size: 16px; font-weight: 600; margin: 0; }
+.page-title p { font-size: 12px; color: var(--text-secondary); margin: 0; }
+
+.btn-toggle-sidebar { background: none; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+
+/* =========================================
+   5. CUSTOM DROPDOWN (GITHUB STYLE)
+   ========================================= */
+/* Sembunyikan Select Asli */
+select.custom-select { display: none !important; }
+
+/* Wrapper Dropdown */
 .custom-dropdown-wrapper {
     position: relative;
     display: inline-block;
-    min-width: 140px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: inherit;
 }
 
-/* Tombol Pemicu (Trigger) - Yang terlihat user */
+/* Tombol Pemicu */
 .dropdown-trigger {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
-    padding: 8px 16px;
-    padding-right: 36px; /* Ruang untuk panah */
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    user-select: none;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 40px;
-    transition: all 0.2s;
-    position: relative;
-}
-
-/* Ikon Panah di Trigger */
-.dropdown-trigger::after {
-    content: '';
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    transition: transform 0.2s;
-}
-
-.dropdown-trigger:hover {
-    border-color: var(--text-secondary);
-    background-color: var(--bg-hover);
-}
-
-/* Menu Pilihan (Yang muncul saat diklik) */
-.dropdown-menu {
-    position: absolute;
-    top: 110%; /* Sedikit di bawah tombol */
-    right: 0; /* Rata kanan agar tidak keluar layar di mobile */
-    left: auto;
-    background-color: #1e1e1e; /* Warna gelap solid ala GitHub */
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); /* Shadow tebal */
-    padding: 6px;
-    min-width: 200px; /* Lebar menu */
-    z-index: 999;
-    
-    /* Animasi Muncul */
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* State Aktif (Saat Menu Terbuka) */
-.custom-dropdown-wrapper.active .dropdown-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-.custom-dropdown-wrapper.active .dropdown-trigger {
-    border-color: var(--color-urea);
-}
-
-.custom-dropdown-wrapper.active .dropdown-trigger::after {
-    transform: translateY(-50%) rotate(180deg); /* Panah berputar */
-}
-
-/* Item Pilihan di dalam Menu */
-.dropdown-item {
-    padding: 10px 12px;
-    font-size: 13px;
-    color: var(--text-secondary);
-    cursor: pointer;
+    padding: 5px 12px; /* Lebih compact ala GitHub */
     border-radius: 6px;
-    transition: all 0.15s;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.dropdown-item:hover {
-    background-color: var(--color-urea);
-    color: #1a1a1a; /* Teks hitam saat hover kuning */
-    font-weight: 600;
-}
-
-/* Item yang sedang terpilih */
-.dropdown-item.selected {
-    color: var(--text-primary);
-    background-color: rgba(255, 255, 255, 0.05);
-    font-weight: 700;
-}
-
-/* Tanda Centang untuk item terpilih */
-.dropdown-item.selected::after {
-    content: '✔';
     font-size: 12px;
-    color: var(--color-urea);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px; justify-content: space-between;
+    min-width: 100px;
+    transition: 0.2s;
 }
-.dropdown-item:hover::after {
-    color: #1a1a1a;
+.dropdown-trigger:hover { background-color: var(--bg-hover); border-color: #8b949e; }
+.dropdown-trigger::after {
+    content: ''; display: inline-block; width: 0; height: 0;
+    border-left: 4px solid transparent; border-right: 4px solid transparent;
+    border-top: 4px solid var(--text-secondary);
 }
 
-/* Scrollbar di dalam dropdown jika item banyak */
-.dropdown-scroll {
-    max-height: 250px;
-    overflow-y: auto;
+/* Menu Dropdown */
+.dropdown-menu {
+    position: absolute; top: 100%; right: 0; margin-top: 4px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    padding: 4px;
+    min-width: 200px;
+    z-index: 100;
+    
+    opacity: 0; visibility: hidden; transform: translateY(-5px);
+    transition: all 0.1s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.dropdown-scroll::-webkit-scrollbar { width: 4px; }
-.dropdown-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+.custom-dropdown-wrapper.active .dropdown-menu {
+    opacity: 1; visibility: visible; transform: translateY(0);
+}
+
+/* Item dalam Menu */
+.dropdown-item {
+    padding: 6px 8px 6px 30px; /* Space kiri untuk centang */
+    font-size: 12px; color: var(--text-primary);
+    cursor: pointer; border-radius: 4px; position: relative;
+}
+.dropdown-item:hover { background-color: var(--color-urea); color: #000; }
+
+/* Centang Item Terpilih */
+.dropdown-item.selected::before {
+    content: '✔'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 10px; opacity: 1;
+}
+.dropdown-item:hover.selected::before { color: #000; }
+
+.dropdown-header-label {
+    padding: 4px 10px; font-size: 11px; font-weight: 600; color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color); margin-bottom: 4px;
+}
+
+/* Scrollbar di dalam Menu */
+.dropdown-scroll { max-height: 200px; overflow-y: auto; }
+
+/* =========================================
+   6. CARDS & GRID
+   ========================================= */
+.content-scroll { flex: 1; overflow-y: auto; padding: 20px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; }
+.ranking-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--card-radius);
+    padding: 16px;
+    display: flex; flex-direction: column;
+}
+
+/* =========================================
+   7. COMPONENTS
+   ========================================= */
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.chart-title { font-size: 14px; font-weight: 600; }
+
+.btn-group { display: flex; background: var(--border-color); padding: 2px; border-radius: 6px; }
+.btn-filter {
+    background: transparent; border: none; color: var(--text-secondary);
+    padding: 4px 12px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: 4px;
+}
+.btn-filter.active { background: var(--bg-card); color: var(--text-primary); shadow: 0 1px 2px rgba(0,0,0,0.2); }
+.btn-filter.active.f-urea { color: var(--color-urea); border-bottom: 2px solid var(--color-urea); }
+.btn-filter.active.f-npk { color: var(--color-npk); border-bottom: 2px solid var(--color-npk); }
+
+.chart-canvas-container { position: relative; height: 250px; width: 100%; }
+
+.kpi-head { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.kpi-value { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+.progress-track { height: 4px; background: var(--border-color); border-radius: 2px; margin-top: 10px; }
+.progress-bar { height: 100%; border-radius: 2px; }
+.bg-urea { background: var(--color-urea); } .bg-npk { background: var(--color-npk); }
+
+/* Ranking List */
+.rank-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-color); font-size: 13px; }
+.rank-left { display: flex; align-items: center; gap: 8px; }
+.rank-num { font-family: monospace; color: var(--text-secondary); }
+.rank-num.best { color: var(--color-urea); }
+.rank-num.warn { color: var(--color-danger); }
+
+/* Loader */
+#loader { position: fixed; inset: 0; background: var(--bg-body); z-index: 999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+.spinner { width: 30px; height: 30px; border: 3px solid var(--border-color); border-top-color: var(--color-urea); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .chart-grid, .ranking-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.show { transform: translateX(0); }
+    .main-content { margin-left: 0 !important; }
+    .kpi-grid { grid-template-columns: 1fr; }
+}

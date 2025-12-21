@@ -18,32 +18,35 @@
     --color-urea: #F7DA19;     
     --color-npk: #055AA1;
     --color-danger: #ef4444;
-    --color-stock: #64748b; /* Abu-abu untuk Dark Mode */
+    --color-stock: #64748b; 
     
     --shadow-card: 0 4px 12px rgba(0,0,0,0.5);
 
     /* --- LAYOUT GRID (KUNCI SIMETRIS) --- */
-    --gap-std: 24px;         /* Jarak Standar Antar Kartu */
-    --card-radius: 12px;     /* Lengkungan Sudut Kartu */
+    --gap-std: 24px;         
+    --card-radius: 16px;     
     --header-height: 64px;
     --sidebar-width: 260px;
+    
+    /* TINGGI KARTU SERAGAM */
+    --kpi-height: 220px; /* Tinggi Fix untuk semua kartu atas */
 }
 
 [data-theme="light"] {
     /* --- WARNA DASAR (LIGHT MODE) --- */
-    --bg-body: #f1f5f9;      /* Abu sangat muda (lebih enak di mata) */
+    --bg-body: #f1f5f9;      
     --bg-sidebar: #ffffff;     
     --bg-card: #ffffff;
     --bg-input: #f8fafc;
     --bg-hover: #f1f5f9;
     
-    --text-primary: #0f172a; /* Hitam Soft */
+    --text-primary: #0f172a; 
     --text-secondary: #64748b; 
     
     --border-color: #e2e8f0;   
     --border-subtle: #f1f5f9;
     
-    --color-stock: #cbd5e1; /* ABU-ABU MUDA (FIX CHART HITAM) */
+    --color-stock: #cbd5e1; 
     
     --shadow-card: 0 2px 10px rgba(0,0,0,0.05);
 }
@@ -100,7 +103,7 @@ body { background-color: var(--bg-body); color: var(--text-primary); font-family
 .sidebar .menu-label:nth-of-type(3) { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); }
 
 /* ========================================= */
-/* 4. LAYOUT UTAMA (SIMETRIS)                */
+/* 4. LAYOUT UTAMA                           */
 /* ========================================= */
 .main-content { flex-grow: 1; overflow-y: auto; height: 100vh; width: 100%; }
 
@@ -119,12 +122,7 @@ body { background-color: var(--bg-body); color: var(--text-primary); font-family
 .page-info h2 { font-size: 18px; font-weight: 700; margin: 0; }
 .page-info p { font-size: 12px; color: var(--text-secondary); margin: 0; }
 
-/* CONTAINER: Padding Luar dibuat sama dengan Gap Dalam */
-.container { 
-    padding: var(--gap-std); 
-    max-width: 1600px; 
-    margin: 0 auto; 
-}
+.container { padding: var(--gap-std); max-width: 1600px; margin: 0 auto; }
 
 /* ========================================= */
 /* 5. GRID SYSTEM (AUTO ALIGN)               */
@@ -133,7 +131,7 @@ body { background-color: var(--bg-body); color: var(--text-primary); font-family
     display: grid; 
     grid-template-columns: repeat(4, 1fr); 
     gap: var(--gap-std); 
-    margin-bottom: var(--gap-std); /* Jarak ke bawah SAMA dengan jarak ke samping */
+    margin-bottom: var(--gap-std); 
 }
 
 .charts-row { 
@@ -150,7 +148,7 @@ body { background-color: var(--bg-body); color: var(--text-primary); font-family
 }
 
 /* ========================================= */
-/* 6. CARDS (RAPI & BERSIH)                  */
+/* 6. CARDS (UKURAN SAMA & RATA)             */
 /* ========================================= */
 .kpi-card, .chart-section {
     background: var(--bg-card); 
@@ -160,7 +158,13 @@ body { background-color: var(--bg-body); color: var(--text-primary); font-family
     box-shadow: var(--shadow-card);
     display: flex; flex-direction: column; 
 }
-.kpi-card { justify-content: space-between; min-height: 160px; }
+
+.kpi-card { 
+    justify-content: space-between; 
+    /* KUNCI: Paksa semua kartu minimal 220px agar Urea dan Growth SAMA TINGGI */
+    min-height: var(--kpi-height); 
+    height: 100%;
+}
 
 .kpi-header { display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center; }
 .kpi-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -170,22 +174,32 @@ body { background-color: var(--bg-body); color: var(--text-primary); font-family
 
 .progress-track { height: 6px; background: var(--bg-body); border-radius: 10px; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--border-color); }
 .progress-bar { height: 100%; border-radius: 10px; }
-.kpi-footer { padding-top: 12px; border-top: 1px solid var(--border-subtle); font-size: 11px; color: var(--text-secondary); display: flex; gap: 6px; align-items: center; }
+.kpi-footer { padding-top: 12px; border-top: 1px solid var(--border-subtle); font-size: 11px; color: var(--text-secondary); display: flex; gap: 6px; align-items: center; margin-top: auto; /* Footer dorong ke bawah */ }
 
+/* FIX GROWTH CHART */
+.sparkline-container { 
+    width: 100%; 
+    /* Paksa grafik mengisi sisa ruang kosong agar kartu terlihat penuh */
+    flex-grow: 1; 
+    min-height: 80px; /* Minimal tinggi grafik */
+    margin-top: 10px; 
+    position: relative; 
+}
+.sparkline-val { position: absolute; bottom: 0; right: 0; font-size: 18px; font-weight: 700; color: var(--text-primary); }
+
+/* Chart Section */
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 16px; }
 .section-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
 .chart-wrapper { position: relative; height: 300px; width: 100%; flex-grow: 1; }
 .chart-actions { flex-grow: 1; display: flex; justify-content: flex-end; }
-.sparkline-container { width: 100%; height: 60px; margin-top: auto; position: relative; }
 
-/* Buttons & Toggles */
+/* Buttons & Ranking */
 .btn-group { display: flex; background: var(--bg-body); padding: 3px; border-radius: 8px; border: 1px solid var(--border-color); }
 .btn-toggle { padding: 6px 14px; font-size: 12px; font-weight: 600; color: var(--text-secondary); border: none; background: transparent; cursor: pointer; border-radius: 6px; }
 .btn-toggle.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
 .btn-toggle.active.t-urea { color: var(--color-urea); } [data-theme="light"] .btn-toggle.active.t-urea { color: #b45309; }
 .btn-toggle.active.t-npk { color: var(--color-npk); }
 
-/* Ranking */
 .rank-item { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border-subtle); }
 .rank-item:last-child { border-bottom: none; }
 .rank-badge { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; border: 1px solid var(--border-color); color: var(--text-secondary); flex-shrink: 0; }
@@ -224,7 +238,7 @@ body { background-color: var(--bg-body); color: var(--text-primary); font-family
 [data-theme="light"] .option.selected { color: #0969da; background: #ddf4ff; }
 
 /* ========================================= */
-/* 8. LOGIN MODAL (TETAP KECIL & RAPI)       */
+/* 8. LOGIN MODAL                            */
 /* ========================================= */
 .modal {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95);

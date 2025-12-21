@@ -4,7 +4,7 @@ Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
 Chart.defaults.font.size = 11;
 
 const app = (() => {
-    // ⚠️ URL WEB APP ⚠️
+    // ⚠️ URL WEB APP (Pastikan URL ini benar) ⚠️
     const API_URL = 'https://script.google.com/macros/s/AKfycbzFanoakpPL3NaMh8CqbolDF5wo9iVb6ikIKQavQh15aGJYBCj7rGQdWyE3sMC911wxdA/exec';
     
     let state = {
@@ -112,6 +112,57 @@ const app = (() => {
         }
     };
 
+    // --- CHART OPTIONS (LEGENDA KOTAK) ---
+    const getChartOptions = () => ({
+        responsive: true, 
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { 
+            legend: { 
+                display: true, 
+                position: 'top',
+                align: 'center', 
+                labels: { 
+                    usePointStyle: true, 
+                    boxWidth: 8, // Ukuran kotak legenda
+                    padding: 15,
+                    font: { size: 11 },
+                    // FUNGSI CUSTOM UNTUK MEMAKSA BENTUK KOTAK
+                    generateLabels: (chart) => {
+                        return chart.data.datasets.map((dataset, i) => {
+                            // Ambil warna (border untuk line, background untuk bar)
+                            let color = dataset.type === 'line' ? dataset.borderColor : dataset.backgroundColor;
+                            
+                            return {
+                                text: dataset.label,
+                                fillStyle: color,        // Warna isi kotak
+                                strokeStyle: 'transparent', // Hapus border kotak agar solid
+                                pointStyle: 'rect',      // <--- PAKSA JADI KOTAK (RECT)
+                                lineWidth: 0,
+                                hidden: !chart.isDatasetVisible(i),
+                                datasetIndex: i,
+                                fontColor: '#b3b3b3'     // Warna teks
+                            };
+                        });
+                    }
+                } 
+            },
+            tooltip: { 
+                backgroundColor: 'rgba(33, 33, 33, 0.95)',
+                titleColor: '#ececec', bodyColor: '#b3b3b3',
+                borderColor: '#424242', borderWidth: 1,
+                displayColors: false, 
+                callbacks: {
+                    label: function(context) { return context.dataset.label + ': ' + formatNumber(context.raw); }
+                }
+            }
+        },
+        scales: { 
+            x: { grid: { display: false } }, 
+            y: { grid: { color: '#333' }, beginAtZero: true, ticks: { maxTicksLimit: 5, callback: (v) => v >= 1000 ? (v/1000)+' rb' : v } } 
+        }
+    });
+
     // --- DASHBOARD LOGIC ---
     const updateDashboard = () => {
         const { rawData, selectedYear, sector, activeProduct } = state;
@@ -216,19 +267,14 @@ const app = (() => {
             return { name: key, val: sortVal, display: displayVal, rawReal: item.real };
         });
 
-        // Urutkan dari Besar ke Kecil (Ranking 1 di atas)
         let activeData = arr.filter(item => item.rawReal > 0);
         activeData.sort((a,b) => b.val - a.val);
 
-        // --- RENDER TOP 5 (Provinsi Tertinggi) ---
         const listTop5 = document.getElementById('list-top5');
         if (activeData.length > 0) {
             listTop5.innerHTML = activeData.slice(0, 5).map((item, i) => `
                 <div class="rank-item">
-                    <div class="rank-left">
-                        <div class="rank-num best">${i+1}</div>
-                        <div class="rank-name">${item.name}</div>
-                    </div>
+                    <div class="rank-left"><div class="rank-num best">${i+1}</div><div class="rank-name">${item.name}</div></div>
                     <div class="rank-val val-best">${item.display}</div>
                 </div>
             `).join('');
@@ -236,21 +282,14 @@ const app = (() => {
             listTop5.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Tidak ada data</div>';
         }
 
-        // --- RENDER BOTTOM 5 (Provinsi Terendah) ---
         const listOthers = document.getElementById('list-others');
         if(activeData.length > 5) {
-            // Ambil 5 terakhir, lalu balik urutan (agar yang paling kecil/terendah di paling atas list ini)
-            const bottom5 = activeData.slice(-5).reverse(); 
-            
-            listOthers.innerHTML = bottom5.map((item) => {
-                // Hitung ranking asli (index + 1)
+            const bottom5 = activeData.slice(5).reverse().slice(0, 5); 
+            listOthers.innerHTML = bottom5.map((item, i) => {
                 let realRank = activeData.indexOf(item) + 1;
                 return `
                 <div class="rank-item">
-                    <div class="rank-left">
-                        <div class="rank-num warn" style="background:transparent; border:none; color:#ff5252; width:auto; padding-right:8px;">#${realRank}</div>
-                        <div class="rank-name">${item.name}</div>
-                    </div>
+                    <div class="rank-left"><div class="rank-num warn">#${realRank}</div><div class="rank-name">${item.name}</div></div>
                     <div class="rank-val val-warn">${item.display}</div>
                 </div>
                 `;
@@ -259,55 +298,6 @@ const app = (() => {
             listOthers.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data kurang</div>';
         }
     };
-
-    // --- CHART CONFIG ---
-    const getChartOptions = () => ({
-        responsive: true, 
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: { 
-            legend: { 
-                display: true, 
-                position: 'top',
-                align: 'center', 
-                labels: { 
-                    usePointStyle: true, 
-                    boxWidth: 6,         
-                    padding: 15,
-                    font: { size: 11 },
-                    generateLabels: (chart) => {
-                        return chart.data.datasets.map((dataset, i) => {
-                            let color = dataset.type === 'line' ? dataset.borderColor : dataset.backgroundColor;
-                            let shape = dataset.label === 'Stok' ? 'rect' : 'circle'; 
-                            return {
-                                text: dataset.label,
-                                fillStyle: color,        
-                                strokeStyle: 'transparent',
-                                pointStyle: shape,       
-                                lineWidth: 0,
-                                hidden: !chart.isDatasetVisible(i),
-                                datasetIndex: i,
-                                fontColor: '#b3b3b3'     
-                            };
-                        });
-                    }
-                } 
-            },
-            tooltip: { 
-                backgroundColor: 'rgba(33, 33, 33, 0.95)',
-                titleColor: '#ececec', bodyColor: '#b3b3b3',
-                borderColor: '#424242', borderWidth: 1,
-                displayColors: false, 
-                callbacks: {
-                    label: function(context) { return context.dataset.label + ': ' + formatNumber(context.raw); }
-                }
-            }
-        },
-        scales: { 
-            x: { grid: { display: false } }, 
-            y: { grid: { color: '#333' }, beginAtZero: true, ticks: { maxTicksLimit: 5, callback: (v) => v >= 1000 ? (v/1000)+' rb' : v } } 
-        }
-    });
 
     const renderNasionalChart = (nasStats) => {
         const ctx = document.getElementById('chartNasional').getContext('2d');
@@ -327,20 +317,41 @@ const app = (() => {
                 labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
                 datasets: [
                     {
-                        label: 'Realisasi', data: data.real, type: 'line',
-                        borderColor: color, backgroundColor: gradient,
+                        label: 'Realisasi', 
+                        data: data.real, 
+                        type: 'line',
+                        borderColor: color, 
+                        backgroundColor: gradient,
                         fill: { target: 'origin', above: gradient }, 
-                        tension: 0.4, borderWidth: 3, pointRadius: 3, pointStyle: 'circle', order: 1
+                        tension: 0.4, 
+                        borderWidth: 2, 
+                        pointRadius: 3, 
+                        pointStyle: 'circle',
+                        order: 1
                     },
                     {
-                        label: 'Target', data: data.target, type: 'line',
-                        borderColor: '#ff5252', borderDash: [6, 6],
-                        borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0, pointStyle: 'circle', order: 0 
+                        label: 'Target', 
+                        data: data.target, 
+                        type: 'line',
+                        borderColor: '#ff5252', 
+                        borderDash: [6, 6],
+                        borderWidth: 2, 
+                        fill: false, 
+                        tension: 0.4, 
+                        pointRadius: 0, 
+                        pointStyle: 'circle', 
+                        order: 0 
                     },
                     {
-                        label: 'Stok', data: data.stock, type: 'bar', 
-                        backgroundColor: 'rgba(75, 85, 99, 0.8)', borderColor: 'rgba(75, 85, 99, 0.8)',
-                        borderWidth: 0, barPercentage: 0.5, pointStyle: 'rect', order: 2
+                        label: 'Stok', 
+                        data: data.stock, 
+                        type: 'bar', 
+                        backgroundColor: 'rgba(75, 85, 99, 0.8)', 
+                        borderColor: 'rgba(75, 85, 99, 0.8)',
+                        borderWidth: 0, 
+                        barPercentage: 0.5, 
+                        pointStyle: 'rect', 
+                        order: 2
                     }
                 ]
             },
@@ -392,20 +403,40 @@ const app = (() => {
                 labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
                 datasets: [
                     {
-                        label: 'Realisasi', data: mReal, type: 'line', 
-                        borderColor: colorMain, backgroundColor: gradient,
+                        label: 'Realisasi', 
+                        data: mReal, 
+                        type: 'line', 
+                        borderColor: colorMain, 
+                        backgroundColor: gradient,
                         fill: { target: 'origin', above: gradient },
-                        tension: 0.3, borderWidth: 2, pointRadius: 4, pointStyle: 'circle', order: 1
+                        tension: 0.3, 
+                        borderWidth: 2, 
+                        pointRadius: 4, 
+                        pointStyle: 'circle',
+                        order: 1
                     },
                     {
-                        label: 'Target', data: mTarget, type: 'line', 
-                        borderColor: '#ff5252', borderDash: [4, 4], 
-                        borderWidth: 1, pointRadius: 0, tension: 0.3, pointStyle: 'circle', order: 0
+                        label: 'Target', 
+                        data: mTarget, 
+                        type: 'line', 
+                        borderColor: '#ff5252', 
+                        borderDash: [4, 4], 
+                        borderWidth: 1, 
+                        pointRadius: 0, 
+                        tension: 0.3, 
+                        pointStyle: 'circle', 
+                        order: 0
                     },
                     {
-                        label: 'Stok', data: mStock, type: 'bar', 
-                        backgroundColor: 'rgba(75, 85, 99, 0.8)', borderColor: 'rgba(75, 85, 99, 0.8)', 
-                        borderWidth: 0, barPercentage: 0.5, pointStyle: 'rect', order: 2
+                        label: 'Stok', 
+                        data: mStock, 
+                        type: 'bar', 
+                        backgroundColor: 'rgba(75, 85, 99, 0.8)', 
+                        borderColor: 'rgba(75, 85, 99, 0.8)', 
+                        borderWidth: 0, 
+                        barPercentage: 0.5, 
+                        pointStyle: 'rect', 
+                        order: 2
                     }
                 ]
             },
@@ -446,5 +477,3 @@ const app = (() => {
 })();
 
 window.onload = app.init;
-
-

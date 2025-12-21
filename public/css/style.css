@@ -238,82 +238,83 @@ body { background-color: var(--bg-body); color: var(--text-primary); font-family
 }
 
 /* ========================================= */
-/* MODIFIKASI KEREN KHUSUS LOGIN ADMIN       */
+/* MODIFIKASI LOGIN ADMIN (CLEAN & FLAT)     */
 /* ========================================= */
 
-/* 1. Buat Modal Jadi Kotak & Compact */
+/* 1. Kotak Modal yang Bersih (Tanpa Border Kuning/Glow) */
 #loginModal {
-    max-width: 350px !important;  /* Paksa lebar jadi kecil (kotak) */
+    max-width: 320px !important; /* Sedikit lebih kecil agar pas */
     width: 90%;
-    border: 1px solid var(--color-urea); /* Tambah border kuning tipis */
-    box-shadow: 0 0 25px rgba(247, 218, 25, 0.15); /* Efek cahaya (Glow) */
-    background: #1a1a1a; /* Warna background sedikit lebih gelap */
+    border: 1px solid #333; /* Border abu gelap halus */
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6); /* Bayangan hitam standar untuk kedalaman */
+    background: #1e1e1e; /* Kembali ke warna card standar */
+    border-radius: 16px;
 }
 
-/* 2. Judul Login di Tengah */
+/* 2. Header Rapi */
 #loginModal .modal-header {
-    justify-content: center; /* Judul di tengah */
-    border-bottom: none;     /* Hilangkan garis pemisah */
-    padding-bottom: 5px;
+    justify-content: center;
+    border-bottom: none;
+    padding: 20px 20px 5px;
     position: relative;
 }
 #loginModal .modal-title {
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: 1px;
+    font-size: 18px;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-primary);
 }
-/* Tombol X (Close) dipojokkan agar rapi */
 #loginModal .btn-close {
-    position: absolute;
-    right: 20px;
-    top: 20px;
+    position: absolute; right: 15px; top: 15px; opacity: 0.7;
 }
 
-/* 3. Input Password Lebih Ganteng */
+/* 3. Input Password di Tengah */
 #loginModal .modal-body {
-    padding: 10px 30px; /* Beri jarak kiri kanan */
+    padding: 15px 25px;
 }
 #adminPass {
-    text-align: center; /* Teks password di tengah */
-    font-size: 18px;
-    letter-spacing: 3px; /* Jarak antar bintang password **** */
-    background: rgba(0,0,0,0.4); 
+    text-align: center;
+    font-size: 16px;
+    letter-spacing: 3px;
+    background: #121212; /* Input lebih gelap */
     border: 1px solid #333;
-    height: 50px;
-    color: var(--color-urea); /* Warna teks saat ngetik jadi kuning */
+    height: 45px;
+    color: var(--text-primary);
+    border-radius: 8px;
 }
+/* Saat diklik, hanya ganti warna border, tanpa glow */
 #adminPass:focus {
-    border-color: var(--color-urea);
-    box-shadow: 0 0 10px rgba(247, 218, 25, 0.2); /* Glow saat diklik */
+    border-color: var(--color-urea); 
+    box-shadow: none; 
 }
 
-/* 4. Footer & Tombol di Tengah */
+/* 4. Footer */
 #loginModal .modal-footer {
-    justify-content: center; /* Tombol di tengah */
-    border-top: none;        /* Hilangkan garis pemisah */
-    padding-top: 10px;
-    padding-bottom: 30px;
+    justify-content: center;
+    border-top: none;
+    padding-top: 0;
+    padding-bottom: 25px;
 }
 
-/* 5. PERBAIKAN KONTRAS TOMBOL (PENTING!) */
+/* 5. Tombol Masuk (Kontras Tinggi tapi Flat/Datar) */
 .btn-primary {
     background: var(--color-urea) !important;
-    color: #000000 !important; /* Teks jadi HITAM PEKAT agar terbaca */
-    font-weight: 800;
+    color: #000000 !important; /* Teks HITAM agar kontras */
+    font-weight: 700;
     font-size: 14px;
     text-transform: uppercase;
-    padding: 12px 40px; /* Tombol lebih lebar */
-    letter-spacing: 1px;
-    border-radius: 50px; /* Tombol jadi bulat lonjong (kapsul) */
-    box-shadow: 0 4px 15px rgba(247, 218, 25, 0.4); /* Bayangan kuning */
+    padding: 10px 30px;
+    letter-spacing: 0.5px;
+    border-radius: 8px; /* Sudut melengkung standar, bukan kapsul */
     border: none;
-    transition: all 0.3s ease;
+    box-shadow: none; /* HAPUS GLOW */
+    transition: all 0.2s ease;
+    width: 100%; /* Tombol selebar kotak */
 }
 
-/* Efek saat tombol disentuh/hover */
+/* Efek hover simpel */
 .btn-primary:hover {
-    transform: translateY(-3px); /* Tombol naik sedikit */
-    box-shadow: 0 6px 20px rgba(247, 218, 25, 0.6); /* Cahaya makin terang */
-    background: #ffe03d !important; /* Kuning makin cerah */
+    background: #ffe03d !important; /* Sedikit lebih terang saat disorot */
+    transform: translateY(-1px);
 }

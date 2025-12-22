@@ -203,19 +203,54 @@ header {
 .growth-up { background: rgba(74, 222, 128, 0.15); color: var(--color-success); }
 .growth-down { background: rgba(248, 113, 113, 0.15); color: var(--color-danger); }
 
-/* CHART HEADERS */
+/* CHART HEADERS & FILTER BUTTONS */
 .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .chart-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
 .big-icon { font-size: 15px; }
 
 .btn-group { background: var(--bg-body); padding: 4px; border-radius: 10px; display: flex; gap: 2px; width: auto; }
+
+/* FIX TOMBOL GOYANG: Border Transparan & Font Weight Tetap */
 .btn-filter {
-    background: transparent; border: none; color: var(--text-secondary);
-    padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s;
+    background: transparent;
+    border: 1px solid transparent; /* Border selalu ada space-nya */
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700; /* Selalu Bold */
+    cursor: pointer;
+    transition: all 0.2s;
 }
-.btn-filter.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.2); border: 1px solid var(--border-color); }
-.btn-filter.active.f-urea { color: var(--color-urea); }
-.btn-filter.active.f-npk { color: var(--color-npk); }
+
+.btn-filter:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+/* KONDISI AKTIF DEFAULT */
+.btn-filter.active {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    border-color: var(--border-color); /* Hanya ubah warnanya */
+}
+
+/* KONDISI AKTIF: UREA (Warna Kuning) */
+#btn-nas-urea.active, 
+#btn-prov-urea.active { 
+    color: var(--color-urea) !important;
+    border-color: var(--color-urea) !important;
+    background: rgba(255, 222, 0, 0.1);
+}
+
+/* KONDISI AKTIF: NPK (Warna Biru) */
+#btn-nas-npk.active,
+#btn-prov-npk.active { 
+    color: var(--color-npk) !important;
+    border-color: var(--color-npk) !important;
+    background: rgba(56, 189, 248, 0.1);
+}
 
 .chart-canvas-container { position: relative; height: 280px; width: 100%; }
 
@@ -297,19 +332,69 @@ header {
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
-/* RESPONSIVE */
-@media (max-width: 1200px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+/* ========================================= */
+/* 4. RESPONSIVE (MOBILE OPTIMIZATION)       */
+/* ========================================= */
+
+@media (max-width: 1200px) { 
+    .kpi-grid { grid-template-columns: 1fr 1fr; } 
+}
+
 @media (max-width: 768px) {
+    /* --- 1. LAYOUT DASAR & SIDEBAR --- */
     .sidebar { transform: translateX(-100%); width: 240px; }
     .sidebar.show { transform: translateX(0); }
     .main-content { margin-left: 0 !important; }
-    .kpi-grid { grid-template-columns: 1fr 1fr; gap: 12px; } /* Mobile 2 Kolom KPI */
-    .chart-grid, .ranking-grid { grid-template-columns: 1fr; }
-    .card { padding: 16px; }
-    .kpi-title { font-size: 11px; }
-    .kpi-value { font-size: 20px; }
-    header { padding: 0 20px; }
-    .content-scroll { padding: 20px; }
-    .brand h2 { font-size: 18px; }
+    
+    /* --- 2. PERBAIKAN FONT & UKURAN TEKS (Agar tidak kebesaran) --- */
+    body { font-size: 12px; } /* Kecilkan font dasar */
+    
+    header { padding: 0 16px; height: 56px; } /* Header lebih pendek */
+    .brand h2 { font-size: 16px; }
+    .page-title h1 { font-size: 14px; }
+    .page-title p { font-size: 10px; }
+    
+    /* --- 3. KARTU KPI (Sembunyikan Target & Growth) --- */
+    .kpi-grid { 
+        grid-template-columns: 1fr 1fr; /* Tetap 2 kolom */
+        gap: 10px; 
+    }
+    
+    .card { padding: 12px 14px; } /* Padding kartu diperkecil */
+    
+    .kpi-title { font-size: 10px; margin-bottom: 4px; }
+    .kpi-value { font-size: 18px; margin-bottom: 8px; } /* Angka utama */
+    
+    /* INI KUNCINYA: Sembunyikan Baris Target & Growth */
+    .kpi-sub { 
+        display: none !important; 
+    }
+    
+    /* Progress bar tetap tampil tapi kasih jarak sedikit */
+    .progress-track { margin-top: 0; }
+
+    /* --- 4. GRAFIK & RANKING --- */
+    .chart-grid, .ranking-grid { grid-template-columns: 1fr; gap: 16px; }
+    .chart-header { margin-bottom: 16px; }
+    .chart-title { font-size: 13px; }
+    .chart-canvas-container { height: 220px; } /* Grafik jangan terlalu tinggi di HP */
+    
+    /* Tombol Filter di HP lebih kecil */
+    .btn-filter { padding: 4px 10px; font-size: 10px; }
+
+    /* --- 5. FOOTER FIX (Agar kelihatan) --- */
+    .content-scroll { 
+        padding: 16px; 
+        padding-bottom: 120px; /* Padding ekstra bawah agar footer naik ke atas */
+    }
+    
+    .footer {
+        padding-bottom: 0;
+        margin-top: 10px;
+    }
+    .footer h4 { font-size: 10px; }
+    .footer p { font-size: 9px; }
+    
     .header-actions { margin-left: auto; }
 }
+

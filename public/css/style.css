@@ -341,123 +341,61 @@ header {
 }
 
 @media (max-width: 768px) {
-    /* --- 1. LAYOUT DASAR --- */
+    /* --- 1. LAYOUT DASAR & SIDEBAR --- */
     .sidebar { transform: translateX(-100%); width: 240px; }
     .sidebar.show { transform: translateX(0); }
     .main-content { margin-left: 0 !important; }
     
-    body { font-size: 12px; }
-    header { padding: 0 16px; height: 56px; }
+    /* --- 2. PERBAIKAN FONT & UKURAN TEKS (Agar tidak kebesaran) --- */
+    body { font-size: 12px; } /* Kecilkan font dasar */
+    
+    header { padding: 0 16px; height: 56px; } /* Header lebih pendek */
     .brand h2 { font-size: 16px; }
+    .page-title h1 { font-size: 14px; }
+    .page-title p { font-size: 10px; }
     
-    /* --- 2. KARTU KPI (MODIFIKASI POSISI) --- */
+    /* --- 3. KARTU KPI (Sembunyikan Target & Growth) --- */
     .kpi-grid { 
-        grid-template-columns: 1fr 1fr; 
-        gap: 12px; 
-        margin-bottom: 12px; /* Gap ke grafik diperkecil agar seimbang */
+        grid-template-columns: 1fr 1fr; /* Tetap 2 kolom */
+        gap: 10px; 
     }
     
-    .card { 
-        padding: 14px; 
-        /* Flex column memungkinkan kita mengacak urutan elemen vertikal */
-        display: flex;
-        flex-direction: column; 
-        position: relative;
-        min-height: 120px;
-    }
+    .card { padding: 12px 14px; } /* Padding kartu diperkecil */
     
-    /* URUTAN 1: JUDUL */
-    .kpi-head { 
-        order: 1; 
-        margin-bottom: 4px; 
-    }
-    .kpi-title { font-size: 10px; }
-    .kpi-icon { font-size: 14px; }
-
-    /* URUTAN 2: ANGKA REALISASI (Dikecilkan) */
-    .kpi-value { 
-        order: 2;
-        font-size: 15px !important; /* Dikecilkan supaya muat */
-        margin-bottom: 16px; /* Beri jarak untuk progress bar */
-    }
-    .kpi-value span:last-child { /* Teks 'Ton' */
-        font-size: 10px !important;
-    }
-
-    /* PERSENTASE (Muncul di kanan angka realisasi) */
-    #val-urea-pct, #val-npk-pct {
-        display: block !important;
-        position: absolute;
-        top: 38px; /* Sesuaikan dengan posisi vertikal angka */
-        right: 14px; /* Rata kanan */
-        font-size: 13px;
-        font-weight: 800;
-        color: var(--text-primary);
-        background: var(--bg-hover); /* Background biar kontras */
-        padding: 2px 6px;
-        border-radius: 4px;
-    }
-
-    /* URUTAN 3: PROGRESS BAR */
-    .progress-row, .progress-track {
-        order: 3;
-        margin-top: 0;
-        height: 4px;
-        width: 100%;
-    }
-    /* Sembunyikan elemen mobile-pct yang ada di HTML (karena kita pakai ID pct asli) */
-    .mobile-pct { display: none; } 
-
-    /* URUTAN 4: GROWTH (Pindah Paling Bawah) */
+    .kpi-title { font-size: 10px; margin-bottom: 4px; }
+    .kpi-value { font-size: 18px; margin-bottom: 8px; } /* Angka utama */
+    
+    /* INI KUNCINYA: Sembunyikan Baris Target & Growth */
     .kpi-sub { 
-        display: flex !important; /* Munculkan container */
-        order: 4; /* Pindah ke paling bawah */
-        margin-top: 8px; /* Jarak dari progress bar */
-        padding-top: 8px;
-        border-top: 1px solid rgba(255,255,255,0.05); /* Garis tipis pemisah */
+        display: none !important; 
     }
     
-    /* Sembunyikan Target (Sesuai request) */
-    .sub-item:first-child { display: none; }
+    /* Progress bar tetap tampil tapi kasih jarak sedikit */
+    .progress-track { margin-top: 0; }
 
-    /* Atur Teks Growth */
-    .sub-item:last-child {
-        width: 100%;
-        display: flex;
-        justify-content: space-between; /* Teks kiri, Badge kanan */
-        align-items: center;
-        text-align: left !important;
-    }
-    
-    /* Ganti teks 'Growth (YoY)' jadi 'Growth' saja */
-    .sub-item:last-child span { font-size: 0 !important; }
-    .sub-item:last-child span::after {
-        content: "Growth";
-        font-size: 10px;
-        color: var(--text-muted);
-    }
-    
-    .growth-badge { font-size: 10px; padding: 1px 6px; }
-
-    /* --- 3. GRAFIK & LAINNYA --- */
+    /* --- 4. GRAFIK & RANKING --- */
     .chart-grid, .ranking-grid { grid-template-columns: 1fr; gap: 16px; }
-    .chart-header { margin-bottom: 12px; }
+    .chart-header { margin-bottom: 16px; }
     .chart-title { font-size: 13px; }
-    .chart-canvas-container { height: 200px; } /* Grafik jangan terlalu tinggi */
+    .chart-canvas-container { height: 220px; } /* Grafik jangan terlalu tinggi di HP */
+    
+    /* Tombol Filter di HP lebih kecil */
     .btn-filter { padding: 4px 10px; font-size: 10px; }
 
-    /* --- 4. FOOTER FIX (Ruang Kosong Dikurangi) --- */
+    /* --- 5. FOOTER FIX (Agar kelihatan) --- */
     .content-scroll { 
         padding: 16px; 
-        padding-bottom: 40px; /* Cukup 40px agar pas */
+        padding-bottom: 100px; /* Padding ekstra bawah agar footer naik ke atas */
     }
     
     .footer {
-        margin-top: 0;
         padding-bottom: 0;
+        margin-top: 10px;
     }
     .footer h4 { font-size: 10px; }
     .footer p { font-size: 9px; }
     
     .header-actions { margin-left: auto; }
 }
+
+

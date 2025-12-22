@@ -362,7 +362,7 @@ header {
     
     .card { padding: 12px 14px; } /* Padding kartu diperkecil */
     
-    .kpi-title { font-size: 10px; margin-bottom: 4px; }
+    .kpi-title { font-size: 8px; margin-bottom: 4px; }
     .kpi-value { font-size: 18px; margin-bottom: 8px; } /* Angka utama */
     
     /* INI KUNCINYA: Sembunyikan Baris Target & Growth */
@@ -385,7 +385,7 @@ header {
     /* --- 5. FOOTER FIX (Agar kelihatan) --- */
     .content-scroll { 
         padding: 16px; 
-        padding-bottom: 100px; /* Padding ekstra bawah agar footer naik ke atas */
+        padding-bottom: 90px; /* Padding ekstra bawah agar footer naik ke atas */
     }
     
     .footer {

@@ -356,13 +356,13 @@ header {
     
     /* --- 3. KARTU KPI (Tampilkan Target & Growth) --- */
 .kpi-grid { 
-    grid-template-columns: 1fr 1fr; /* Tetap 2 kolom */
-    gap: 12px; /* Sedikit lebih lebar untuk konten lebih banyak */
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
 }
 
 .card { 
-    padding: 14px 12px; /* Padding sedikit lebih besar */
-    min-height: 130px; /* Tinggi minimal untuk konsistensi */
+    padding: 14px 12px;
+    min-height: 130px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -392,18 +392,26 @@ header {
     margin-bottom: 8px;
 }
 
-/* Container untuk target dan persentase */
+/* Container untuk target dan persentase - PERSENTASE DI SEBELAH KANAN */
 .kpi-sub-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end; /* Ratakan di bagian bawah */
     margin-bottom: 4px;
 }
 
-/* Style untuk persentase */
+/* Style untuk target */
+.target-text {
+    font-size: 9px;
+}
+
+/* Style untuk persentase - DI SEBELAH KANAN */
 .percentage {
-    font-weight: 600;
-    font-size: 10px;
+    font-weight: 700;
+    font-size: 11px; /* Sedikit lebih besar untuk penekanan */
+    margin-left: 8px; /* Jarak dari target */
+    min-width: 45px; /* Lebar minimum untuk konsistensi */
+    text-align: right; /* Rata kanan */
 }
 
 /* Container untuk vs tahun lalu dan growth */
@@ -419,18 +427,20 @@ header {
     font-size: 8px;
 }
 
-/* Style untuk panah dan persentase growth */
+/* Style untuk panah dan persentase growth - DI SEBELAH KANAN */
 .growth-value {
     display: flex;
     align-items: center;
+    justify-content: flex-end; /* Rata kanan */
     gap: 3px;
-    font-weight: 600;
-    font-size: 10px;
+    font-weight: 700;
+    font-size: 11px; /* Sedikit lebih besar */
+    min-width: 45px; /* Lebar minimum untuk konsistensi */
 }
 
 /* Style untuk panah */
 .arrow {
-    font-size: 10px;
+    font-size: 11px;
 }
 
 /* Progress bar */
@@ -473,7 +483,8 @@ header {
     
     .percentage,
     .growth-value {
-        font-size: 9px;
+        font-size: 10px;
+        min-width: 40px;
     }
 }
     /* --- 4. GRAFIK & RANKING --- */

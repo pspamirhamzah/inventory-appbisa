@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard APP</title>
-    
+    <title>Dashboard APP BISA</title>
+
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
 
@@ -18,13 +18,15 @@
     <meta property="og:image" content="https://appbisa.pages.dev/assets/thumbnail.jpg">
     <meta property="og:image:width" content="800">
     <meta property="og:image:height" content="418">
-
+    
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
+    <!-- Load CSS Terpisah -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -34,6 +36,10 @@
         <div style="font-size: 12px; color: var(--text-secondary); letter-spacing: 2px;">MEMUAT APP...</div>
     </div>
 
+    <!-- Overlay Mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="app.toggleSidebar()"></div>
+
+    <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
         <div class="brand">
             <div class="brand-content">
@@ -48,14 +54,32 @@
         <div class="nav-item" id="nav-retail" onclick="app.setSector('RETAIL')">
             <i class="fas fa-store"></i> <span>Retail</span>
         </div>
+        
+        <!-- ADMIN MENU (Hidden by default) -->
+        <div id="admin-menu" style="display: none;">
+            <div class="nav-header">ADMINISTRATOR</div>
+            <div class="nav-item" onclick="alert('Fitur Input Data')">
+                <i class="fas fa-plus-square"></i> <span>Input Data</span>
+            </div>
+            <div class="nav-item" onclick="alert('Fitur Edit Data')">
+                <i class="fas fa-edit"></i> <span>Edit Data</span>
+            </div>
+             <div class="nav-item" onclick="app.logout()">
+                <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+            </div>
+        </div>
+
         <div class="nav-spacer"></div>
-        <div class="nav-login">
-            <div class="nav-item" onclick="alert('Fitur Login Admin')">
-                <i class="fas fa-sign-in-alt"></i> <span>Login Admin</span>
+        
+        <!-- LOGIN ADMIN -->
+        <div class="nav-login" id="login-btn-container">
+            <div class="nav-item" onclick="app.showLoginModal()">
+                <i class="fas fa-lock"></i> <span>Admin</span>
             </div>
         </div>
     </aside>
 
+    <!-- MAIN CONTENT -->
     <main class="main-content" id="main-content">
         <header>
             <div class="header-left">
@@ -72,24 +96,34 @@
 
         <div class="content-scroll">
             
+            <!-- ADMIN BANNER -->
+            <div id="admin-banner" style="display:none; background: #2f2f2f; border: 1px solid #424242; padding: 10px; margin-bottom: 20px; border-radius: 4px; font-size: 12px; color: #4ade80;">
+                <i class="fas fa-user-shield"></i> Mode Administrator Aktif
+            </div>
+
+            <!-- KPI GRID -->
             <div class="kpi-grid">
+                <!-- Urea -->
                 <div class="card">
                     <div class="kpi-head"><div class="kpi-title">Realisasi Urea</div><div class="kpi-icon icon-urea"><i class="fas fa-cubes"></i></div></div>
                     <div class="kpi-value" id="val-urea-real">0</div>
                     <div class="kpi-sub"><span>Target: <span id="val-urea-target">0</span></span><span id="val-urea-pct">0%</span></div>
                     <div class="progress-track"><div class="progress-bar bg-urea" id="prog-urea" style="width: 0%"></div></div>
                 </div>
+                <!-- NPK -->
                 <div class="card">
                     <div class="kpi-head"><div class="kpi-title">Realisasi NPK</div><div class="kpi-icon icon-npk"><i class="fas fa-leaf"></i></div></div>
                     <div class="kpi-value" id="val-npk-real">0</div>
                     <div class="kpi-sub"><span>Target: <span id="val-npk-target">0</span></span><span id="val-npk-pct">0%</span></div>
                     <div class="progress-track"><div class="progress-bar bg-npk" id="prog-npk" style="width: 0%"></div></div>
                 </div>
+                <!-- Growth Urea -->
                 <div class="card">
                     <div class="kpi-head"><div class="kpi-title">Growth Urea (YoY)</div><div class="kpi-icon"><i class="fas fa-chart-line"></i></div></div>
                     <div class="kpi-value" id="growth-urea-val">0%</div>
                     <div class="kpi-sub"><span style="font-size: 11px; opacity: 0.7;">vs Tahun Lalu</span><div id="growth-urea-badge" class="growth-badge growth-up"><i class="fas fa-arrow-up"></i> 0%</div></div>
                 </div>
+                <!-- Growth NPK -->
                 <div class="card">
                     <div class="kpi-head"><div class="kpi-title">Growth NPK (YoY)</div><div class="kpi-icon"><i class="fas fa-chart-line"></i></div></div>
                     <div class="kpi-value" id="growth-npk-val">0%</div>
@@ -97,7 +131,9 @@
                 </div>
             </div>
 
+            <!-- CHART GRID -->
             <div class="chart-grid">
+                <!-- Nasional -->
                 <div class="card">
                     <div class="chart-header">
                         <div class="chart-title">Realisasi Nasional</div>
@@ -108,6 +144,7 @@
                     </div>
                     <div class="chart-canvas-container"><canvas id="chartNasional"></canvas></div>
                 </div>
+                <!-- Provinsi -->
                 <div class="card">
                     <div class="chart-header">
                         <div class="chart-title" id="prov-chart-title">Realisasi Provinsi</div>
@@ -117,42 +154,56 @@
                         <canvas id="chartProvinsi"></canvas>
                         <div id="prov-placeholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); color:var(--text-primary); border-radius:8px; backdrop-filter: blur(2px);">
                             <span style="background:var(--bg-body); padding:8px 16px; border-radius:20px; border:1px solid var(--border-color); font-size:12px;">
-                                <i class="fas fa-chart-bar"></i> Memuat Data...
+                                <i class="fas fa-arrow-up"></i> Pilih Provinsi
                             </span>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- RANKING GRID -->
             <div class="ranking-grid">
                 <div class="card">
                     <div class="chart-header">
-                        <div class="chart-title" style="color: var(--color-primary); display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                            <span>Provinsi Tertinggi</span>
-                            <i class="fas fa-arrow-trend-up" style="font-size: 1.25rem;"></i>
-                        </div>
+                        <div class="chart-title big-icon">Provinsi Tertinggi</div>
+                        <!-- Ikon Flat Hijau Besar -->
+                        <i class="fas fa-trophy" style="color: var(--color-gold); font-size: 18px;"></i>
                     </div>
                     <div id="list-top5" class="rank-list"></div>
                 </div>
                 <div class="card">
                     <div class="chart-header">
-                        <div class="chart-title" style="color: var(--color-danger); display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                            <span>Provinsi Terendah</span>
-                            <i class="fas fa-arrow-trend-down" style="font-size: 1.25rem;"></i>
-                        </div>
+                        <div class="chart-title big-icon" style="color: var(--color-danger);">Provinsi Terendah</div>
+                        <!-- Ikon Flat Merah Besar -->
+                        <i class="fas fa-exclamation-circle" style="color: var(--color-danger); font-size: 18px;"></i>
                     </div>
                     <div id="list-others" class="rank-list"></div>
                 </div>
             </div>
             
-            <div style="height: 40px;"></div>
-            <div style="text-align: center; font-size: 11px; color: var(--text-muted);">
-                &copy; 2025 Dashboard Monitoring Penjualan.
+            <!-- FOOTER -->
+            <div class="footer">
+                <h4>Copyright &copy;2025 Adm Pemasaran & Penjualan</h4>
+                <p>Design by 00.0034</p>
             </div>
-            <div style="height: 20px;"></div>
         </div>
     </main>
 
+    <!-- LOGIN MODAL -->
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Login Admin</h3>
+                <button onclick="app.closeLoginModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="password" id="adminPass" class="input-square" placeholder="Password...">
+                <button class="btn-square" onclick="app.login()">MASUK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Script Terpisah -->
     <script src="js/script.js"></script>
 </body>
 </html>

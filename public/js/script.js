@@ -23,7 +23,7 @@ const app = (() => {
         if (typeof str === 'number') return str;
         if (!str) return 0;
         let s = str.toString();
-        // Hapus ribuan (.), Ganti desimal (;) atau (,) menjadi (.)
+        // Hapus titik ribuan, Ganti desimal (;) atau (,) menjadi (.)
         if (s.includes(';')) {
              s = s.replace(/\./g, '').replace(';', '.');
         } else {
@@ -37,6 +37,23 @@ const app = (() => {
     const hexToRgbA = (hex, alpha) => {
         let c; if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){ c= hex.substring(1).split(''); if(c.length== 3){ c= [c[0], c[0], c[1], c[1], c[2], c[2]]; } c= '0x'+c.join(''); return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')'; } return hex;
     }
+
+    // CUSTOM DASHED CIRCLE ICON (UNTUK TARGET)
+    const createDashedCircle = (color) => {
+        const size = 12; 
+        const r = 4.5;   
+        const c = document.createElement('canvas');
+        c.width = size;
+        c.height = size;
+        const ctx = c.getContext('2d');
+        ctx.beginPath();
+        ctx.setLineDash([2, 2]); 
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = color;
+        ctx.arc(size/2, size/2, r, 0, 2 * Math.PI);
+        ctx.stroke();
+        return c;
+    };
 
     const init = () => { fetchData(); checkScreenSize(); };
 
@@ -149,14 +166,22 @@ const app = (() => {
                     stats.curr[prodKey].real += r.TONASE;
                     if(r.BULAN >= 0) stats.nasional[prodKey].real[r.BULAN] += r.TONASE;
                     
-                    if (!stats.provinsi[r.PROVINSI]) stats.provinsi[r.PROVINSI] = { real: 0, target: 0 };
-                    stats.provinsi[r.PROVINSI].real += r.TONASE;
+                    // PERBAIKAN LOGIKA AGREGASI PROVINSI
+                    // Hanya agregasi jika produk sesuai dengan activeProduct (UREA/NPK)
+                    if (prodKey === state.activeProduct) {
+                         if (!stats.provinsi[r.PROVINSI]) stats.provinsi[r.PROVINSI] = { real: 0, target: 0 };
+                         stats.provinsi[r.PROVINSI].real += r.TONASE;
+                    }
                 } 
                 else if (isTarget) {
                     stats.curr[prodKey].target += r.TONASE;
                     if(r.BULAN >= 0) stats.nasional[prodKey].target[r.BULAN] += r.TONASE;
-                    if (!stats.provinsi[r.PROVINSI]) stats.provinsi[r.PROVINSI] = { real: 0, target: 0 };
-                    stats.provinsi[r.PROVINSI].target += r.TONASE;
+                    
+                     // Agregasi Target Provinsi (Sesuai Produk Aktif)
+                    if (prodKey === state.activeProduct) {
+                        if (!stats.provinsi[r.PROVINSI]) stats.provinsi[r.PROVINSI] = { real: 0, target: 0 };
+                        stats.provinsi[r.PROVINSI].target += r.TONASE;
+                    }
                 }
                 else if (isStock) {
                     if(r.BULAN >= 0) stats.nasional[prodKey].stock[r.BULAN] += r.TONASE;
@@ -229,6 +254,8 @@ const app = (() => {
         gradient.addColorStop(0, hexToRgbA(color, 0.4));
         gradient.addColorStop(1, hexToRgbA(color, 0.0));
         
+        const targetIcon = createDashedCircle('#999'); 
+
         chartNasional = new Chart(ctx, {
             type: 'line',
             data: {
@@ -237,19 +264,21 @@ const app = (() => {
                     {
                         label: 'Realisasi', data: data.real, borderColor: color, backgroundColor: gradient,
                         fill: true, tension: 0.4, borderWidth: 3, 
-                        pointRadius: 4, pointHoverRadius: 6, pointStyle: 'circle' 
+                        pointRadius: 4, pointHoverRadius: 6, 
+                        pointStyle: 'circle' 
                     },
                     {
                         label: 'Target', data: data.target, borderColor: '#666', borderDash: [6, 6],
                         borderWidth: 2, fill: false, tension: 0.4, 
                         pointRadius: 0, 
-                        pointStyle: 'rect' 
+                        pointStyle: targetIcon 
                     },
                     {
                         label: 'Stok', data: data.stock, borderColor: '#a8a29e', borderDash: [], 
                         showLine: true, borderWidth: 2, 
                         pointRadius: 0, pointHoverRadius: 6, 
-                        pointStyle: 'rect', fill: false, tension: 0.3
+                        pointStyle: 'rect', 
+                        fill: false, tension: 0.3
                     }
                 ]
             },
@@ -318,6 +347,8 @@ const app = (() => {
         gradient.addColorStop(0, hexToRgbA(colorMain, 0.4));
         gradient.addColorStop(1, hexToRgbA(colorMain, 0.0));
 
+        const targetIcon = createDashedCircle('#999');
+
         chartProvinsi = new Chart(ctx, {
             type: 'line',
             data: {
@@ -330,7 +361,8 @@ const app = (() => {
                     },
                     {
                         label: 'Target', data: mTarget, borderColor: '#999', borderDash: [4, 4], 
-                        borderWidth: 1, pointRadius: 0, tension: 0.3, pointStyle: 'rect'
+                        borderWidth: 1, pointRadius: 0, tension: 0.3, 
+                        pointStyle: targetIcon
                     },
                     {
                         label: 'Stok', data: mStock, borderColor: '#a8a29e', borderDash: [], 
@@ -346,7 +378,9 @@ const app = (() => {
                 plugins: { 
                     legend: { display: true, labels: { usePointStyle: true, boxWidth: 6, boxHeight: 6, 
                         generateLabels: (chart) => Chart.defaults.plugins.legend.labels.generateLabels(chart).map(l => { 
-                            l.pointStyle = 'rect'; return l; 
+                            if(l.text === 'Realisasi') l.pointStyle = 'rect';
+                            if(l.text === 'Stok') l.pointStyle = 'rect';
+                            return l; 
                         }) 
                     }},
                     tooltip: { backgroundColor: 'rgba(33, 33, 33, 0.95)', titleColor: '#ececec', bodyColor: '#b3b3b3', borderColor: '#424242', borderWidth: 1, displayColors: false, callbacks: { label: (c) => c.dataset.label + ': ' + formatNumber(c.raw) } }
@@ -370,6 +404,7 @@ const app = (() => {
             return { name: key, val: sortVal, display: displayVal, rawReal: item.real };
         });
 
+        // PERBAIKAN LOGIKA RANKING
         let activeData = arr.filter(item => item.rawReal > 0);
         activeData.sort((a,b) => b.val - a.val);
 
@@ -400,7 +435,9 @@ const app = (() => {
 
         const listWarn = document.getElementById('list-others');
         if(listWarn) {
-            const others = activeData.slice(-5).reverse();
+            // AMBIL SISA SETELAH TOP 5, LALU URUTKAN TERENDAH KE TERTINGGI (ASC) UNTUK WARNING
+            const others = activeData.slice(5).sort((a,b) => a.val - b.val).slice(0, 5);
+            
             if(others.length === 0) listWarn.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data Kosong</div>';
             else listWarn.innerHTML = others.map((item, i) => `
                 <div class="rank-item">

@@ -130,7 +130,7 @@ const app = (() => {
     };
 
     const updateDashboard = () => {
-        const { rawData, selectedYear, sector } = state;
+        const { rawData, selectedYear, sector, activeProduct } = state;
         let stats = {
             curr: { UREA: {real:0, target:0}, NPK: {real:0, target:0} },
             prev: { UREA: {real:0}, NPK: {real:0} },
@@ -158,16 +158,18 @@ const app = (() => {
             }
 
             let isReal = r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN');
-            let isTarget = r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET');
-            let isStock = r.JENIS.includes('STOK') || r.JENIS.includes('STOCK');
+            
+            // Logika Target (RKO)
+            let isTarget = r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET') || r.JENIS.includes('RKO');
+            
+            // Logika Stok (AKTUAL)
+            let isStock = r.JENIS.includes('STOK') || r.JENIS.includes('STOCK') || r.JENIS.includes('AKTUAL');
 
             if (r.TAHUN === selectedYear) {
                 if (isReal) {
                     stats.curr[prodKey].real += r.TONASE;
                     if(r.BULAN >= 0) stats.nasional[prodKey].real[r.BULAN] += r.TONASE;
                     
-                    // PERBAIKAN LOGIKA AGREGASI PROVINSI
-                    // Hanya agregasi jika produk sesuai dengan activeProduct (UREA/NPK)
                     if (prodKey === state.activeProduct) {
                          if (!stats.provinsi[r.PROVINSI]) stats.provinsi[r.PROVINSI] = { real: 0, target: 0 };
                          stats.provinsi[r.PROVINSI].real += r.TONASE;
@@ -177,7 +179,6 @@ const app = (() => {
                     stats.curr[prodKey].target += r.TONASE;
                     if(r.BULAN >= 0) stats.nasional[prodKey].target[r.BULAN] += r.TONASE;
                     
-                     // Agregasi Target Provinsi (Sesuai Produk Aktif)
                     if (prodKey === state.activeProduct) {
                         if (!stats.provinsi[r.PROVINSI]) stats.provinsi[r.PROVINSI] = { real: 0, target: 0 };
                         stats.provinsi[r.PROVINSI].target += r.TONASE;
@@ -209,28 +210,20 @@ const app = (() => {
             const real = data.curr[key].real;
             const target = data.curr[key].target;
             const prev = data.prev[key].real;
+            const pct = target > 0 ? (real/target*100) : 0;
             
-            // LOGIKA PERSENTASE (Realisasi / Target * 100)
-            // Jika target 0, maka persentase dianggap 0 untuk menghindari Error/Infinity
-            const pct = target > 0 ? (real / target * 100) : 0;
-            
-            // Update Angka Realisasi
             const elReal = document.getElementById(`val-${key.toLowerCase()}-real`);
             if(elReal) elReal.innerText = formatNumber(real);
             
-            // Update Angka Target
             const elTarget = document.getElementById(`val-${key.toLowerCase()}-target`);
             if(elTarget) elTarget.innerText = formatNumber(target);
             
-            // Update Teks Persentase
             const elPct = document.getElementById(`val-${key.toLowerCase()}-pct`);
             if(elPct) elPct.innerText = pct.toFixed(1) + '%';
             
-            // Update Progress Bar (Maksimal 100% agar tidak keluar container)
             const elProg = document.getElementById(`prog-${key.toLowerCase()}`);
             if(elProg) elProg.style.width = Math.min(pct, 100) + '%';
 
-            // Hitung Growth (YoY)
             let growth = 0; let isUp = true;
             if(prev > 0) { growth = ((real - prev) / prev) * 100; isUp = growth >= 0; } 
             else if (real > 0) growth = 100;
@@ -247,6 +240,7 @@ const app = (() => {
         updateCard('UREA', stats);
         updateCard('NPK', stats);
     };
+
     const renderNasionalChart = (nasStats) => {
         const canvas = document.getElementById('chartNasional');
         if(!canvas) return;
@@ -264,7 +258,7 @@ const app = (() => {
         const targetIcon = createDashedCircle('#999'); 
 
         chartNasional = new Chart(ctx, {
-            type: 'line',
+            type: 'line', 
             data: {
                 labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
                 datasets: [
@@ -272,20 +266,26 @@ const app = (() => {
                         label: 'Realisasi', data: data.real, borderColor: color, backgroundColor: gradient,
                         fill: true, tension: 0.4, borderWidth: 3, 
                         pointRadius: 4, pointHoverRadius: 6, 
-                        pointStyle: 'circle' 
+                        pointStyle: 'circle',
+                        order: 1
                     },
                     {
                         label: 'Target', data: data.target, borderColor: '#666', borderDash: [6, 6],
                         borderWidth: 2, fill: false, tension: 0.4, 
                         pointRadius: 0, 
-                        pointStyle: targetIcon 
+                        pointStyle: targetIcon,
+                        order: 2 
                     },
                     {
-                        label: 'Stok', data: data.stock, borderColor: '#a8a29e', borderDash: [], 
-                        showLine: true, borderWidth: 2, 
-                        pointRadius: 0, pointHoverRadius: 6, 
+                        label: 'Stok', 
+                        data: data.stock, 
+                        type: 'bar', 
+                        backgroundColor: '#616161', 
+                        borderColor: '#616161',
+                        borderWidth: 0,
+                        barPercentage: 0.5,
                         pointStyle: 'rect', 
-                        fill: false, tension: 0.3
+                        order: 3
                     }
                 ]
             },
@@ -342,8 +342,8 @@ const app = (() => {
 
             if (r.BULAN >= 0) {
                 if (r.JENIS.includes('REALISASI') || r.JENIS.includes('PENJUALAN')) mReal[r.BULAN] += r.TONASE;
-                else if (r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET')) mTarget[r.BULAN] += r.TONASE;
-                else if (r.JENIS.includes('STOK') || r.JENIS.includes('STOCK')) mStock[r.BULAN] += r.TONASE;
+                else if (r.JENIS.includes('RKAP') || r.JENIS.includes('TARGET') || r.JENIS.includes('RKO')) mTarget[r.BULAN] += r.TONASE;
+                else if (r.JENIS.includes('STOK') || r.JENIS.includes('STOCK') || r.JENIS.includes('AKTUAL')) mStock[r.BULAN] += r.TONASE;
             }
         });
 
@@ -363,19 +363,33 @@ const app = (() => {
                 datasets: [
                     {
                         label: 'Realisasi', data: mReal, borderColor: colorMain, backgroundColor: gradient,
-                        fill: true, tension: 0.3, borderWidth: 2, 
-                        pointRadius: 4, pointHoverRadius: 6, pointStyle: 'circle'
+                        fill: true, tension: 0.4, borderWidth: 3, // Tension disamakan 0.4
+                        pointRadius: 4, pointHoverRadius: 6, pointStyle: 'circle',
+                        order: 1
                     },
                     {
-                        label: 'Target', data: mTarget, borderColor: '#999', borderDash: [4, 4], 
-                        borderWidth: 1, pointRadius: 0, tension: 0.3, 
-                        pointStyle: targetIcon
+                        // --- UPDATE TAMPILAN TARGET (RKO) DISAMAKAN DENGAN NASIONAL ---
+                        label: 'Target', 
+                        data: mTarget, 
+                        borderColor: '#666', // Warna disamakan (#666)
+                        borderDash: [6, 6],  // Dash disamakan [6, 6]
+                        borderWidth: 2,      // Tebal disamakan 2
+                        fill: false, 
+                        tension: 0.4,        // Tension disamakan 0.4
+                        pointRadius: 0, 
+                        pointStyle: targetIcon,
+                        order: 2
                     },
                     {
-                        label: 'Stok', data: mStock, borderColor: '#a8a29e', borderDash: [], 
-                        showLine: true, borderWidth: 2, 
-                        pointRadius: 0, pointHoverRadius: 6, 
-                        pointStyle: 'rect', fill: false, tension: 0.3
+                        label: 'Stok', 
+                        data: mStock, 
+                        type: 'bar', 
+                        backgroundColor: '#616161', 
+                        borderColor: '#616161', 
+                        borderWidth: 0, 
+                        barPercentage: 0.5,
+                        pointStyle: 'rect', 
+                        order: 3
                     }
                 ]
             },
@@ -401,34 +415,22 @@ const app = (() => {
         let arr = Object.keys(provData).map(key => {
             const item = provData[key];
             let sortVal = 0, displayVal = '';
-            
-            // LOGIKA KHUSUS: 
-            // Jika SUBSIDI -> Gunakan Persentase (Real / Target)
-            // Jika RETAIL -> Gunakan Tonase (Real)
             if (state.sector === 'SUBSIDI') {
-                const percentage = item.target > 0 ? (item.real / item.target) * 100 : 0;
-                sortVal = percentage; 
-                displayVal = percentage.toFixed(1) + '%'; // Menampilkan %
+                sortVal = item.target > 0 ? (item.real / item.target) * 100 : 0;
+                displayVal = sortVal.toFixed(1) + '%';
             } else {
                 sortVal = item.real;
-                displayVal = formatNumber(item.real); // Menampilkan Angka
+                displayVal = formatNumber(item.real);
             }
-            
-            // Sertakan rawTarget agar provinsi dengan realisasi 0 tapi punya target tetap muncul
-            return { name: key, val: sortVal, display: displayVal, rawReal: item.real, rawTarget: item.target };
+            return { name: key, val: sortVal, display: displayVal, rawReal: item.real };
         });
 
-        // PERBAIKAN FILTER:
-        // Tampilkan jika ada Realisasi ATAU ada Target. 
-        // Sebelumnya, jika realisasi 0 (pencapaian 0%) data hilang, sekarang tetap muncul sebagai yang terendah.
-        let activeData = arr.filter(item => item.rawReal > 0 || item.rawTarget > 0);
-        
-        // Urutkan dari Tertinggi ke Terendah (Berdasarkan sortVal / Persentase)
+        // PERBAIKAN LOGIKA RANKING
+        let activeData = arr.filter(item => item.rawReal > 0);
         activeData.sort((a,b) => b.val - a.val);
 
         const listBest = document.getElementById('list-top5');
         if(listBest) {
-            // Ambil 5 Teratas
             const top5 = activeData.slice(0, 5);
             if(top5.length === 0) listBest.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data Kosong</div>';
             else listBest.innerHTML = top5.map((item, i) => {
@@ -454,13 +456,11 @@ const app = (() => {
 
         const listWarn = document.getElementById('list-others');
         if(listWarn) {
-            // LOGIKA PROVINSI TERENDAH
-            // Ambil 5 terbawah dari seluruh data yang ada
-            // Kita reverse array (terendah di atas) lalu ambil 5 pertama
-            const allLowest = [...activeData].sort((a,b) => a.val - b.val).slice(0, 5);
+            // AMBIL SISA SETELAH TOP 5, LALU URUTKAN TERENDAH KE TERTINGGI (ASC) UNTUK WARNING
+            const others = activeData.slice(5).sort((a,b) => a.val - b.val).slice(0, 5);
             
-            if(allLowest.length === 0) listWarn.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data Kosong</div>';
-            else listWarn.innerHTML = allLowest.map((item, i) => `
+            if(others.length === 0) listWarn.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data Kosong</div>';
+            else listWarn.innerHTML = others.map((item, i) => `
                 <div class="rank-item">
                     <div class="rank-left">
                         <div class="rank-num warn">${i+1}</div>
@@ -471,6 +471,7 @@ const app = (() => {
             `).join('');
         }
     };
+
     const normalizeMonth = (str) => { const map = {'JAN':0, 'JANUARI':0, 'FEB':1, 'FEBRUARI':1, 'MAR':2, 'MARET':2, 'APR':3, 'APRIL':3, 'MEI':4, 'MAY':4, 'JUN':5, 'JUNI':5, 'JUL':6, 'JULI':6, 'AGU':7, 'AGUSTUS':7, 'SEP':8, 'SEPTEMBER':8, 'OKT':9, 'OKTOBER':9, 'NOV':10, 'NOVEMBER':10, 'DES':11, 'DESEMBER':11}; return map[String(str).toUpperCase().trim()] ?? -1; };
     const toTitleCase = (str) => str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
     

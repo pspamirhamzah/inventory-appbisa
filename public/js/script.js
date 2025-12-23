@@ -216,7 +216,7 @@ const app = (() => {
             
             const pct = target > 0 ? (real / target * 100) : 0;
             let sisa = target - real;
-            if (sisa < 0) sisa = 0;
+            if (sisa < 0) sisa = 0; // Kalkulasi sisa angka
 
             const keyL = key.toLowerCase();
 
@@ -237,8 +237,28 @@ const app = (() => {
             const elTarget = document.getElementById(`val-${keyL}-target`);
             if(elTarget) elTarget.innerText = fmt(target);
 
-            const elSisa = document.getElementById(`val-${keyL}-sisa`);
-            if(elSisa) elSisa.innerText = fmt(sisa);
+            // ===========================================
+            // UPDATE: LOGIKA TERCAPAI / SISA TARGET
+            // ===========================================
+            const elRowSisa = document.getElementById(`row-${keyL}-sisa`);
+            if(elRowSisa) {
+                // Syarat: Target > 0 dan Sisa <= 0
+                if (target > 0 && sisa <= 0) {
+                    // Tampilkan Icon Checklist Hijau & Text Tercapai
+                    elRowSisa.innerHTML = '<i class="fas fa-check-circle"></i> Tercapai';
+                    elRowSisa.style.color = 'var(--color-success)'; 
+                    
+                    // Styling tambahan agar rapi
+                    elRowSisa.style.display = 'flex';
+                    elRowSisa.style.alignItems = 'center';
+                    elRowSisa.style.gap = '6px';
+                } else {
+                    // Tampilkan Angka Sisa (Default)
+                    elRowSisa.innerHTML = `Sisa Target: <span id="val-${keyL}-sisa">${fmt(sisa)}</span>`;
+                    elRowSisa.style.color = 'var(--color-danger)';
+                    elRowSisa.style.display = 'block'; // Reset display
+                }
+            }
 
             // --- Growth ---
             let growth = 0; let sign = '+';

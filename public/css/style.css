@@ -520,57 +520,7 @@ header {
     .page-title p { font-size: 10px; }
 
     /* --- 2. PERBAIKAN KPI CARD (PROPOSIONAL) --- */
-    .kpi-grid { 
-        grid-template-columns: 1fr 1fr; 
-        gap: 12px; 
-        margin-bottom: 24px; /* GAP SEIMBANG ANTAR SECTION */
-    }
     
-    .card.kpi-modern { 
-        padding: 16px; 
-        min-height: 150px; /* Tinggi fix agar seragam */
-        display: flex;
-        flex-direction: column;
-        /* Ini kuncinya: Space-between membagi ruang Atas, Tengah, Bawah */
-        justify-content: space-between; 
-    }
-    
-    /* BAGIAN ATAS: Judul */
-    .kpi-head-modern { 
-        margin-bottom: 0; 
-        flex-shrink: 0;
-    }
-    .kpi-title-modern { font-size: 9px; }
-    .kpi-icon { font-size: 16px; }
-    
-    /* BAGIAN TENGAH: Angka & Progress Bar */
-    /* Kita manipulasi margin agar mereka berkumpul di tengah */
-    .kpi-main-row { 
-        margin-top: auto;    /* Dorong dari atas */
-        margin-bottom: 4px;  /* Jarak dikit ke bar */
-        justify-content: flex-start;
-    }
-    .progress-track-modern { 
-        height: 4px; 
-        margin-bottom: auto; /* Dorong sisa target ke bawah */
-        width: 100%;
-    }
-
-    .kpi-big { font-size: 22px; } /* Sedikit diperbesar biar jelas */
-    .kpi-pct-small { font-size: 12px; align-self: center; }
-    
-    /* BAGIAN BAWAH: Sisa Target */
-    .kpi-detail-row { display: none; } /* Target Hidden (Sesuai Request) */
-    
-    .kpi-sisa-row { 
-        font-size: 10px; 
-        text-align: right; 
-        margin-top: 10px;
-        padding-top: 8px;
-        border-top: 1px dashed var(--border-color); /* Garis bantu visual */
-        width: 100%;
-    }
-
     /* --- 3. GRAFIK & FLIP CARD --- */
     .chart-grid {
         grid-template-columns: 1fr; 

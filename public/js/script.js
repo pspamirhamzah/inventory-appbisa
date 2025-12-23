@@ -283,7 +283,7 @@ const app = (() => {
                         backgroundColor: '#616161', 
                         borderColor: '#616161',
                         borderWidth: 0,
-                        barPercentage: 0.5,
+                        barPercentage: 0.8,
                         pointStyle: 'rect', 
                         order: 3
                     }
@@ -295,8 +295,7 @@ const app = (() => {
                 plugins: { 
                     legend: { display: true, labels: { usePointStyle: true, boxWidth: 6, boxHeight: 6, 
                         generateLabels: (chart) => Chart.defaults.plugins.legend.labels.generateLabels(chart).map(l => { 
-                            if(l.text === 'Realisasi') l.pointStyle = 'rect';
-                            if(l.text === 'Stok') l.pointStyle = 'rect';
+                            l.pointStyle = 'rect'; 
                             return l; 
                         })
                     }},
@@ -363,19 +362,18 @@ const app = (() => {
                 datasets: [
                     {
                         label: 'Realisasi', data: mReal, borderColor: colorMain, backgroundColor: gradient,
-                        fill: true, tension: 0.4, borderWidth: 3, // Tension disamakan 0.4
+                        fill: true, tension: 0.4, borderWidth: 3, 
                         pointRadius: 4, pointHoverRadius: 6, pointStyle: 'circle',
                         order: 1
                     },
                     {
-                        // --- UPDATE TAMPILAN TARGET (RKO) DISAMAKAN DENGAN NASIONAL ---
                         label: 'Target', 
                         data: mTarget, 
-                        borderColor: '#666', // Warna disamakan (#666)
-                        borderDash: [6, 6],  // Dash disamakan [6, 6]
-                        borderWidth: 2,      // Tebal disamakan 2
+                        borderColor: '#666', 
+                        borderDash: [6, 6], 
+                        borderWidth: 2, 
                         fill: false, 
-                        tension: 0.4,        // Tension disamakan 0.4
+                        tension: 0.4, 
                         pointRadius: 0, 
                         pointStyle: targetIcon,
                         order: 2
@@ -387,7 +385,7 @@ const app = (() => {
                         backgroundColor: '#616161', 
                         borderColor: '#616161', 
                         borderWidth: 0, 
-                        barPercentage: 0.5,
+                        barPercentage: 0.8,
                         pointStyle: 'rect', 
                         order: 3
                     }
@@ -399,8 +397,7 @@ const app = (() => {
                 plugins: { 
                     legend: { display: true, labels: { usePointStyle: true, boxWidth: 6, boxHeight: 6, 
                         generateLabels: (chart) => Chart.defaults.plugins.legend.labels.generateLabels(chart).map(l => { 
-                            if(l.text === 'Realisasi') l.pointStyle = 'rect';
-                            if(l.text === 'Stok') l.pointStyle = 'rect';
+                            l.pointStyle = 'rect'; 
                             return l; 
                         }) 
                     }},
@@ -425,7 +422,6 @@ const app = (() => {
             return { name: key, val: sortVal, display: displayVal, rawReal: item.real };
         });
 
-        // PERBAIKAN LOGIKA RANKING
         let activeData = arr.filter(item => item.rawReal > 0);
         activeData.sort((a,b) => b.val - a.val);
 
@@ -456,7 +452,6 @@ const app = (() => {
 
         const listWarn = document.getElementById('list-others');
         if(listWarn) {
-            // AMBIL SISA SETELAH TOP 5, LALU URUTKAN TERENDAH KE TERTINGGI (ASC) UNTUK WARNING
             const others = activeData.slice(5).sort((a,b) => a.val - b.val).slice(0, 5);
             
             if(others.length === 0) listWarn.innerHTML = '<div style="padding:15px;text-align:center;color:grey;font-size:12px;">Data Kosong</div>';
@@ -515,7 +510,6 @@ const app = (() => {
             if(p === 'pso123') {
                 state.isAdmin = true;
                 document.getElementById('admin-menu').style.display = 'block';
-                document.getElementById('admin-banner').style.display = 'block';
                 document.getElementById('login-btn-container').style.display = 'none';
                 document.getElementById('loginModal').style.display = 'none';
             } else { alert('Password salah!'); }
@@ -523,7 +517,6 @@ const app = (() => {
         logout: () => {
             state.isAdmin = false;
             document.getElementById('admin-menu').style.display = 'none';
-            document.getElementById('admin-banner').style.display = 'none';
             document.getElementById('login-btn-container').style.display = 'block';
         }
     };

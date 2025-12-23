@@ -32,6 +32,7 @@
 
     <link rel="stylesheet" href="css/style.css">
 </head>
+<body>
 
     <div id="loader">
         <div class="spinner"></div>
@@ -83,7 +84,7 @@
                 <button class="btn-toggle-sidebar" onclick="app.toggleSidebar()"><i class="fas fa-bars"></i></button>
                 <div class="page-title">
                     <h1 id="page-title-text">Subsidi</h1>
-                    <p>Overview Performa Penjualan</p>
+                    <p id="header-update-text">Overview Performa Penjualan</p>
                 </div>
             </div>
             <div class="header-actions">
@@ -173,31 +174,55 @@
             </div>
 
             <div class="chart-grid">
-                <div class="card">
-                    <div class="chart-header">
-                        <div class="chart-title">Realisasi Nasional</div>
-                        <div class="btn-group">
-                            <button class="btn-filter active f-urea" id="btn-nas-urea" onclick="app.setChartProduct('UREA')">UREA</button>
-                            <button class="btn-filter" id="btn-nas-npk" onclick="app.setChartProduct('NPK')">NPK</button>
+                
+                <div class="card-flip-container">
+                    <div class="card-flip-inner" id="flip-nasional">
+                        <div class="card-front">
+                            <div class="chart-header">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <div class="chart-title">Realisasi Nasional</div>
+                                    <button class="ai-icon-btn" onclick="app.analyzeData('nasional')" title="AI Insight"><i class="fas fa-wand-magic-sparkles"></i></button>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn-filter active f-urea" id="btn-nas-urea" onclick="app.setChartProduct('UREA')">UREA</button>
+                                    <button class="btn-filter" id="btn-nas-npk" onclick="app.setChartProduct('NPK')">NPK</button>
+                                </div>
+                            </div>
+                            <div class="chart-canvas-container"><canvas id="chartNasional"></canvas></div>
+                        </div>
+                        <div class="card-back">
+                            <button class="btn-back" onclick="app.flipCard('nasional')"><i class="fas fa-arrow-left"></i> Kembali ke Grafik</button>
+                            <div id="ai-nasional-content" class="ai-content"></div>
                         </div>
                     </div>
-                    <div class="chart-canvas-container"><canvas id="chartNasional"></canvas></div>
                 </div>
                 
-                <div class="card">
-                    <div class="chart-header">
-                        <div class="chart-title" id="prov-chart-title">Realisasi Provinsi</div>
-                        <select class="custom-select" id="dropdown-provinsi" onchange="app.renderProvChart()" style="min-width: 140px;"></select>
-                    </div>
-                    <div class="chart-canvas-container">
-                        <canvas id="chartProvinsi"></canvas>
-                        <div id="prov-placeholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); color:var(--text-primary); border-radius:8px; backdrop-filter: blur(2px); display:none;">
-                            <span style="background:var(--bg-body); padding:8px 16px; border-radius:20px; border:1px solid var(--border-color); font-size:12px;">
-                                <i class="fas fa-arrow-up"></i> Pilih Provinsi
-                            </span>
+                <div class="card-flip-container">
+                    <div class="card-flip-inner" id="flip-provinsi">
+                        <div class="card-front">
+                            <div class="chart-header">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <div class="chart-title" id="prov-chart-title">Realisasi Provinsi</div>
+                                    <button class="ai-icon-btn" onclick="app.analyzeData('provinsi')" title="AI Insight"><i class="fas fa-wand-magic-sparkles"></i></button>
+                                </div>
+                                <select class="custom-select" id="dropdown-provinsi" onchange="app.renderProvChart()" style="min-width: 140px;"></select>
+                            </div>
+                            <div class="chart-canvas-container">
+                                <canvas id="chartProvinsi"></canvas>
+                                <div id="prov-placeholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); color:var(--text-primary); border-radius:8px; backdrop-filter: blur(2px); display:none;">
+                                    <span style="background:var(--bg-body); padding:8px 16px; border-radius:20px; border:1px solid var(--border-color); font-size:12px;">
+                                        <i class="fas fa-arrow-up"></i> Pilih Provinsi
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-back">
+                            <button class="btn-back" onclick="app.flipCard('provinsi')"><i class="fas fa-arrow-left"></i> Kembali ke Grafik</button>
+                            <div id="ai-provinsi-content" class="ai-content"></div>
                         </div>
                     </div>
                 </div>
+
             </div>
 
             <div class="ranking-grid">
@@ -222,7 +247,8 @@
                 <p>Design by 00.0034</p>
             </div>
 
-        </div> </main>
+        </div> 
+    </main>
 
     <div id="loginModal" class="modal-overlay">
         <div class="modal-box">

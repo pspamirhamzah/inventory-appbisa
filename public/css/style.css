@@ -500,6 +500,7 @@ header {
 /* ========================================= */
 
 @media (max-width: 768px) {
+
     /* --- 1. LAYOUT UTAMA --- */
     .sidebar { transform: translateX(-100%); width: 240px; }
     .sidebar.show { transform: translateX(0); }
@@ -515,11 +516,11 @@ header {
     .page-title h1 { font-size: 14px; }
     .page-title p { font-size: 10px; }
 
-    /* --- 2. GRID KARTU --- */
+    /* --- 2. GRID KARTU (KPI) --- */
     .kpi-grid { 
         grid-template-columns: 1fr 1fr; 
         gap: 12px; 
-        margin-bottom: 12px; /* GAP UTAMA ANTAR SECTION */
+        margin-bottom: 12px; /* GAP SEIMBANG */
     }
     
     /* STYLE KARTU BARU DI MOBILE */
@@ -540,29 +541,47 @@ header {
     .kpi-sisa-row { margin-top: 4px; }
 
     /* --- 3. GRAFIK & LAINNYA --- */
+    /* GAP SEIMBANG: Set margin-bottom sama dengan gap kpi (12px) */
     .chart-grid { 
         grid-template-columns: 1fr; 
         gap: 12px; 
-        margin-bottom: 12px; /* GAP UTAMA ANTAR SECTION */
+        margin-bottom: 12px; 
     }
 
-    .ranking-grid { 
-        grid-template-columns: 1fr; 
-        gap: 12px; 
-        /* Tidak perlu margin-bottom di sini karena ada padding di content-scroll */
+    .ranking-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        /* Margin bottom ranking diatur oleh padding content-scroll */
     }
 
     .chart-header { margin-bottom: 10px; }
     .chart-title { font-size: 13px; }
-    .chart-canvas-container { height: 200px; }
     .btn-filter { padding: 4px 8px; font-size: 10px; }
 
-    /* Fix Flip Height di Mobile */
+    /* --- PERBAIKAN GRAFIK FULL (TIDAK MENGECIL) --- */
+    
+    /* 1. Atur Tinggi Kartu Flip */
     .card-flip-container { 
         height: 380px; 
-        margin-bottom: 0; /* HAPUS MARGIN INI agar diatur oleh grid gap */
+        width: 100%;
+        margin-bottom: 0; /* Gap dihandle oleh chart-grid */
     }
-    .card-front, .card-back { padding: 16px; }
+
+    /* 2. Gunakan Flexbox pada sisi kartu agar isinya memanjang */
+    .card-front, .card-back { 
+        padding: 16px; 
+        display: flex;       
+        flex-direction: column; 
+    }
+
+    /* 3. Paksa grafik mengisi sisa ruang (FIX Grafik Mengecil) */
+    .chart-canvas-container { 
+        height: auto !important; /* Jangan dipaksa 200px */
+        flex-grow: 1;            /* Mengisi ruang kosong */
+        width: 100%;
+        position: relative;
+        min-height: 0;           
+    }
 
     /* --- 4. FOOTER --- */
     .content-scroll { 

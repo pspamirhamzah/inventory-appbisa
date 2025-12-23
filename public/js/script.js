@@ -6,8 +6,8 @@ Chart.defaults.font.size = 11;
 const app = (() => {
     const API_URL = 'https://script.google.com/macros/s/AKfycbzFanoakpPL3NaMh8CqbolDF5wo9iVb6ikIKQavQh15aGJYBCj7rGQdWyE3sMC911wxdA/exec';
     
-    // API Key Anda
-    const apiKey = "AIzaSyDBofQZJdWnW67pYBLQvWomfcNJJlL42aQ"; 
+    // API Key Anda (Pastikan ini benar)
+    const apiKey = ""; 
 
     let state = {
         rawData: [],
@@ -23,19 +23,15 @@ const app = (() => {
 
     let chartNasional = null;
     let chartProvinsi = null;
-    let statsGlobal = null; // Disimpan untuk AI Context
+    let statsGlobal = null; 
 
-    // --- UTILS (Handling ; and ,) ---
+    // --- UTILS ---
     const parseIndoNumber = (str) => {
         if (typeof str === 'number') return str;
         if (!str) return 0;
         let s = str.toString();
-        // Hapus titik ribuan, Ganti desimal (;) atau (,) menjadi (.)
-        if (s.includes(';')) {
-             s = s.replace(/\./g, '').replace(';', '.');
-        } else {
-             s = s.replace(/\./g, '').replace(',', '.');
-        }
+        if (s.includes(';')) { s = s.replace(/\./g, '').replace(';', '.'); } 
+        else { s = s.replace(/\./g, '').replace(',', '.'); }
         return parseFloat(s) || 0;
     };
 
@@ -45,25 +41,15 @@ const app = (() => {
         let c; if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){ c= hex.substring(1).split(''); if(c.length== 3){ c= [c[0], c[0], c[1], c[1], c[2], c[2]]; } c= '0x'+c.join(''); return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')'; } return hex;
     }
 
-    // CUSTOM DASHED CIRCLE ICON (UNTUK TARGET)
     const createDashedCircle = (color) => {
-        const size = 12; 
-        const r = 4.5;   
-        const c = document.createElement('canvas');
-        c.width = size;
-        c.height = size;
-        const ctx = c.getContext('2d');
-        ctx.beginPath();
-        ctx.setLineDash([2, 2]); 
-        ctx.lineWidth = 1.5;
-        ctx.strokeStyle = color;
-        ctx.arc(size/2, size/2, r, 0, 2 * Math.PI);
-        ctx.stroke();
+        const size = 12; const r = 4.5; const c = document.createElement('canvas');
+        c.width = size; c.height = size; const ctx = c.getContext('2d');
+        ctx.beginPath(); ctx.setLineDash([2, 2]); ctx.lineWidth = 1.5;
+        ctx.strokeStyle = color; ctx.arc(size/2, size/2, r, 0, 2 * Math.PI); ctx.stroke();
         return c;
     };
 
     const init = () => { 
-        // Set tanggal awal dari localStorage jika ada
         if(state.lastUpdateDate) {
             const headerText = document.getElementById('header-update-text');
             if(headerText) headerText.innerText = state.lastUpdateDate;
@@ -80,7 +66,6 @@ const app = (() => {
 
     const fetchData = async () => {
         document.getElementById('loader').style.display = 'flex';
-        // Safety Timeout 10s
         setTimeout(() => { if(document.getElementById('loader')) document.getElementById('loader').style.display = 'none'; }, 10000);
 
         try {
@@ -230,7 +215,6 @@ const app = (() => {
             titleEl.style.color = ''; 
         }
 
-        // SIMPAN STATS GLOBAL UNTUK AI
         statsGlobal = stats;
 
         renderKPI(stats);
@@ -249,22 +233,18 @@ const app = (() => {
             
             const pct = target > 0 ? (real / target * 100) : 0;
             
-            // 1. Value & Pct
             const elRealBig = document.getElementById(`val-${keyL}-real`);
             if(elRealBig) elRealBig.innerText = fmt(real);
             
             const elPct = document.getElementById(`val-${keyL}-pct`);
             if(elPct) elPct.innerText = pct.toFixed(0) + '%'; 
 
-            // 2. Progress Bar
             const elProg = document.getElementById(`prog-${keyL}`);
             if(elProg) elProg.style.width = Math.min(pct, 100) + '%';
             
-            // 3. Target
             const elTarget = document.getElementById(`val-${keyL}-target`);
             if(elTarget) elTarget.innerText = fmt(target);
 
-            // 4. Status Sisa / Tercapai
             const elRowSisa = document.getElementById(`row-${keyL}-sisa`);
             if(elRowSisa) {
                 const sisa = target - real;
@@ -278,7 +258,6 @@ const app = (() => {
                 }
             }
 
-            // --- Growth ---
             let growth = 0; let isUp = true;
             if(prev > 0) { growth = ((real - prev) / prev) * 100; isUp = growth >= 0; } 
             else if (real > 0) { growth = 100; }
@@ -294,18 +273,15 @@ const app = (() => {
         updateCard('NPK', stats);
     };
 
-    // --- FITUR AI (UPDATED) ---
+    // --- FITUR AI (MODEL DIGANTI KE 1.5-FLASH AGAR GRATIS) ---
     const analyzeData = async (type) => {
         const flipInner = document.getElementById(`flip-${type}`);
         const content = document.getElementById(`ai-${type}-content`);
         
-        // Mulai Animasi Flip
         flipInner.classList.add('flipped');
         
-        // Tampilkan Loading
         content.innerHTML = '<div style="margin-top:60px; text-align:center; color:var(--text-secondary);"><i class="fas fa-circle-notch fa-spin fa-2x"></i><br><span style="font-size:12px; margin-top:10px; display:block;">Menganalisa Data & Tren Pasar...</span></div>';
 
-        // 1. Siapkan Konteks Data (Angka)
         let ctxData = "";
         const prod = state.activeProduct; 
         const sec = state.sector;         
@@ -330,7 +306,6 @@ const app = (() => {
             ctxData = `DATA: Provinsi ${provName}, Produk ${prod}, Sektor ${sec}, Tahun ${year}. Realisasi: ${formatNumber(pData.real)} Ton. Target: ${formatNumber(pData.target)} Ton. Capaian: ${pct}%.`;
         }
 
-        // 2. Siapkan Prompt (Instruksi Cerdas)
         const promptText = `
             Bertindaklah sebagai Senior Data Analyst di PT Pupuk Indonesia.
             
@@ -355,8 +330,8 @@ const app = (() => {
         `;
 
         try {
-            // Panggil API Gemini
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+            // PERUBAHAN UTAMA: MODEL DIGANTI KE gemini-1.5-flash (GRATIS & STABIL)
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -377,7 +352,7 @@ const app = (() => {
             
         } catch (e) {
             console.error(e);
-            content.innerHTML = `<h4 style="color:var(--color-danger)">Gagal Memuat</h4><p style="font-size:11px">Error: ${e.message}</p>`;
+            content.innerHTML = `<h4 style="color:var(--color-danger)">Gagal Memuat</h4><p style="font-size:11px">Pastikan API Key benar.<br>Error: ${e.message}</p>`;
         }
     };
 
@@ -393,55 +368,44 @@ const app = (() => {
 
         const isUrea = state.activeProduct === 'UREA';
         const data = isUrea ? nasStats.UREA : nasStats.NPK;
-        const color = isUrea ? '#FFDE00' : '#38bdf8'; 
-          
+        const color = isUrea ? '#FFDE00' : '#38bdf8'; 
+        
         const gradient = ctx.createLinearGradient(0, 0, 0, 300);
         gradient.addColorStop(0, hexToRgbA(color, 0.4));
         gradient.addColorStop(1, hexToRgbA(color, 0.0));
-          
-        const targetIcon = createDashedCircle('#999'); 
+        
+        const targetIcon = createDashedCircle('#999'); 
 
         chartNasional = new Chart(ctx, {
-            type: 'line', 
+            type: 'line',
             data: {
                 labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
                 datasets: [
                     {
                         label: 'Realisasi', data: data.real, borderColor: color, backgroundColor: gradient,
-                        fill: true, tension: 0.4, borderWidth: 3, 
-                        pointRadius: 4, pointHoverRadius: 6, 
-                        pointStyle: 'circle',
-                        order: 1
+                        fill: true, tension: 0.4, borderWidth: 3, 
+                        pointRadius: 4, pointHoverRadius: 6, 
+                        pointStyle: 'circle', order: 1
                     },
                     {
                         label: 'Target', data: data.target, borderColor: '#666', borderDash: [6, 6],
-                        borderWidth: 2, fill: false, tension: 0.4, 
-                        pointRadius: 0, 
-                        pointStyle: targetIcon,
-                        order: 2 
+                        borderWidth: 2, fill: false, tension: 0.4, 
+                        pointRadius: 0, pointStyle: targetIcon, order: 2 
                     },
                     {
-                        label: 'Stok', 
-                        data: data.stock, 
-                        type: 'bar', 
-                        backgroundColor: '#616161', 
-                        borderColor: '#616161',
-                        borderWidth: 0,
-                        barPercentage: 0.8,
-                        pointStyle: 'rect', 
-                        order: 3
+                        label: 'Stok', data: data.stock, type: 'bar', backgroundColor: '#616161', borderColor: '#616161',
+                        borderWidth: 0, barPercentage: 0.8, pointStyle: 'rect', order: 3
                     }
                 ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
-                plugins: { 
-                    legend: { display: true, labels: { usePointStyle: true, boxWidth: 6, boxHeight: 6, 
-                        generateLabels: (chart) => Chart.defaults.plugins.legend.labels.generateLabels(chart).map(l => { 
-                            l.pointStyle = 'rect'; 
-                            return l; 
-                        }) 
+                plugins: { 
+                    legend: { display: true, labels: { usePointStyle: true, boxWidth: 6, boxHeight: 6, 
+                        generateLabels: (chart) => Chart.defaults.plugins.legend.labels.generateLabels(chart).map(l => { 
+                            l.pointStyle = 'rect'; return l; 
+                        }) 
                     }},
                     tooltip: { backgroundColor: 'rgba(33, 33, 33, 0.95)', titleColor: '#ececec', bodyColor: '#b3b3b3', borderColor: '#424242', borderWidth: 1, displayColors: false, callbacks: { label: (c) => c.dataset.label + ': ' + formatNumber(c.raw) } }
                 },
@@ -456,7 +420,7 @@ const app = (() => {
         const canvas = document.getElementById('chartProvinsi');
         if(!canvas) return;
         const ctx = canvas.getContext('2d');
-          
+        
         if (!provName) {
             if(placeholder) placeholder.style.display = 'flex';
             if(chartProvinsi) chartProvinsi.clear();
@@ -476,7 +440,7 @@ const app = (() => {
             let prodKey = '';
             if (r.PRODUK.includes('UREA') || r.PRODUK.includes('NITREA')) prodKey = 'UREA';
             else if (r.PRODUK.includes('NPK') || r.PRODUK.includes('PHONSKA')) prodKey = 'NPK';
-              
+            
             if (prodKey !== state.activeProduct) return;
 
             if (r.BULAN >= 0) {
@@ -488,7 +452,7 @@ const app = (() => {
 
         if(chartProvinsi) chartProvinsi.destroy();
         const colorMain = state.activeProduct === 'UREA' ? '#FFDE00' : '#38bdf8';
-          
+        
         const gradient = ctx.createLinearGradient(0, 0, 0, 300);
         gradient.addColorStop(0, hexToRgbA(colorMain, 0.4));
         gradient.addColorStop(1, hexToRgbA(colorMain, 0.0));
@@ -502,7 +466,7 @@ const app = (() => {
                 datasets: [
                     {
                         label: 'Realisasi', data: mReal, borderColor: colorMain, backgroundColor: gradient,
-                        fill: true, tension: 0.4, borderWidth: 3, 
+                        fill: true, tension: 0.4, borderWidth: 3, 
                         pointRadius: 4, pointHoverRadius: 6, pointStyle: 'circle',
                         order: 1
                     },
@@ -560,8 +524,8 @@ const app = (() => {
                 else if(i===1) { colorClass='silver'; medalIcon='<i class="fas fa-medal" style="color:var(--color-silver); font-size:14px;"></i>'; }
                 else if(i===2) { colorClass='bronze'; medalIcon='<i class="fas fa-medal" style="color:var(--color-bronze); font-size:14px;"></i>'; }
                 
-                let numberHtml = medalIcon ? 
-                    `<div class="rank-num medal-box">${medalIcon}</div>` : 
+                let numberHtml = medalIcon ? 
+                    `<div class="rank-num medal-box">${medalIcon}</div>` : 
                     `<div class="rank-num best">${i+1}</div>`;
 
                 return `

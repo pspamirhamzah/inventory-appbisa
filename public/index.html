@@ -98,59 +98,89 @@
 
             <!-- KPI GRID -->
             <div class="kpi-grid">
-                <!-- Urea -->
-                <div class="card">
-                    <div class="kpi-head"><div class="kpi-title">Realisasi Urea</div><div class="kpi-icon icon-urea"><i class="fas fa-cubes"></i></div></div>
-                    <div class="kpi-value" id="val-urea-real">0</div>
-                    <div class="kpi-sub"><span>Target: <span id="val-urea-target">0</span></span><span id="val-urea-pct">0%</span></div>
-                    <div class="progress-track"><div class="progress-bar bg-urea" id="prog-urea" style="width: 0%"></div></div>
+                
+                <div class="card kpi-modern">
+                    <div class="kpi-head-modern">
+                        <div class="kpi-title-modern">Realisasi Urea</div>
+                        <div class="kpi-icon icon-urea"><i class="fas fa-cubes"></i></div>
+                    </div>
+                    
+                    <div class="kpi-main-row">
+                        <span class="kpi-big" id="val-urea-real">0</span>
+                        <span class="kpi-pct-small pct-urea" id="val-urea-pct">0%</span>
+                    </div>
+                    
+                    <div class="progress-track-modern">
+                        <div class="progress-bar bg-urea" id="prog-urea" style="width: 0%"></div>
+                    </div>
+                    
+                    <div class="kpi-detail-row">
+                        <span>Realisasi: <span id="text-urea-real">0</span></span>
+                        <span>Target: <span id="val-urea-target">0</span></span>
+                    </div>
+                    <div class="kpi-sisa-row">Sisa Target: <span id="val-urea-sisa">0</span></div>
                 </div>
-                <!-- NPK -->
-                <div class="card">
-                    <div class="kpi-head"><div class="kpi-title">Realisasi NPK</div><div class="kpi-icon icon-npk"><i class="fas fa-leaf"></i></div></div>
-                    <div class="kpi-value" id="val-npk-real">0</div>
-                    <div class="kpi-sub"><span>Target: <span id="val-npk-target">0</span></span><span id="val-npk-pct">0%</span></div>
-                    <div class="progress-track"><div class="progress-bar bg-npk" id="prog-npk" style="width: 0%"></div></div>
-                </div>
-                <!-- Growth Urea -->
-                <div class="card">
-                    <div class="kpi-head"><div class="kpi-title">Growth Urea (YoY)</div><div class="kpi-icon"><i class="fas fa-chart-line"></i></div></div>
-                    <div class="kpi-value" id="growth-urea-val">0%</div>
-                    <div class="kpi-sub"><span style="font-size: 11px; opacity: 0.7;">vs Tahun Lalu</span><div id="growth-urea-badge" class="growth-badge growth-up"><i class="fas fa-arrow-up"></i> 0%</div></div>
-                </div>
-                <!-- Growth NPK -->
-                <div class="card">
-                    <div class="kpi-head"><div class="kpi-title">Growth NPK (YoY)</div><div class="kpi-icon"><i class="fas fa-chart-line"></i></div></div>
-                    <div class="kpi-value" id="growth-npk-val">0%</div>
-                    <div class="kpi-sub"><span style="font-size: 11px; opacity: 0.7;">vs Tahun Lalu</span><div id="growth-npk-badge" class="growth-badge growth-down"><i class="fas fa-arrow-down"></i> 0%</div></div>
-                </div>
-            </div>
 
-            <!-- CHART GRID -->
-            <div class="chart-grid">
-                <!-- Nasional -->
-                <div class="card">
-                    <div class="chart-header">
-                        <div class="chart-title">Realisasi Nasional</div>
-                        <div class="btn-group">
-                            <button class="btn-filter active f-urea" id="btn-nas-urea" onclick="app.setChartProduct('UREA')">UREA</button>
-                            <button class="btn-filter" id="btn-nas-npk" onclick="app.setChartProduct('NPK')">NPK</button>
+                <div class="card kpi-modern">
+                    <div class="kpi-head-modern">
+                        <div class="kpi-title-modern">Realisasi NPK</div>
+                        <div class="kpi-icon icon-npk"><i class="fas fa-leaf"></i></div>
+                    </div>
+
+                    <div class="kpi-main-row">
+                        <span class="kpi-big" id="val-npk-real">0</span>
+                        <span class="kpi-pct-small pct-npk" id="val-npk-pct">0%</span>
+                    </div>
+
+                    <div class="progress-track-modern">
+                        <div class="progress-bar bg-npk" id="prog-npk" style="width: 0%"></div>
+                    </div>
+
+                    <div class="kpi-detail-row">
+                        <span>Realisasi: <span id="text-npk-real">0</span></span>
+                        <span>Target: <span id="val-npk-target">0</span></span>
+                    </div>
+                    <div class="kpi-sisa-row">Sisa Target: <span id="val-npk-sisa">0</span></div>
+                </div>
+
+                <div class="card kpi-modern">
+                    <div class="kpi-head-modern">
+                        <div class="kpi-title-modern">Growth Urea (YoY)</div>
+                        <div class="kpi-icon"><i class="fas fa-chart-line"></i></div>
+                    </div>
+
+                    <div class="kpi-big" id="growth-urea-val">0%</div>
+                    <div class="kpi-subtext">vs Tahun Lalu</div>
+                    
+                    <div class="growth-legend">
+                        <div class="legend-item">
+                            <span class="dot bg-urea"></span> 
+                            <span id="year-curr-urea">2025</span>: <span id="val-urea-curr">0</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="dot bg-grey"></span> 
+                            <span id="year-prev-urea">2024</span>: <span id="val-urea-prev">0</span>
                         </div>
                     </div>
-                    <div class="chart-canvas-container"><canvas id="chartNasional"></canvas></div>
                 </div>
-                <!-- Provinsi -->
-                <div class="card">
-                    <div class="chart-header">
-                        <div class="chart-title" id="prov-chart-title">Realisasi Provinsi</div>
-                        <select class="custom-select" id="dropdown-provinsi" onchange="app.renderProvChart()"></select>
+
+                <div class="card kpi-modern">
+                    <div class="kpi-head-modern">
+                        <div class="kpi-title-modern">Growth NPK (YoY)</div>
+                        <div class="kpi-icon"><i class="fas fa-chart-line"></i></div>
                     </div>
-                    <div class="chart-canvas-container">
-                        <canvas id="chartProvinsi"></canvas>
-                        <div id="prov-placeholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); color:var(--text-primary); border-radius:8px; backdrop-filter: blur(2px);">
-                            <span style="background:var(--bg-body); padding:8px 16px; border-radius:20px; border:1px solid var(--border-color); font-size:12px;">
-                                <i class="fas fa-arrow-up"></i> Pilih Provinsi
-                            </span>
+
+                    <div class="kpi-big" id="growth-npk-val">0%</div>
+                    <div class="kpi-subtext">vs Tahun Lalu</div>
+                    
+                    <div class="growth-legend">
+                        <div class="legend-item">
+                            <span class="dot bg-npk"></span> 
+                            <span id="year-curr-npk">2025</span>: <span id="val-npk-curr">0</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="dot bg-grey"></span> 
+                            <span id="year-prev-npk">2024</span>: <span id="val-npk-prev">0</span>
                         </div>
                     </div>
                 </div>

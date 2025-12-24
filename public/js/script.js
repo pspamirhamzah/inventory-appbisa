@@ -8,8 +8,8 @@ const app = (() => {
     
     // --- API KEY CONFIGURATION ---
     // Pastikan ini sesuai dengan key Anda
-    const k_head = "AIzaSyDBofQZJdWnW"; 
-    const k_tail = "67pYBLQvWomfcNJJlL42aQ"; 
+    const k_head = "AIzaSyDHe6hnE2k6L"; 
+    const k_tail = "pNeGQR13rKLOSwvW96p0m0"; 
     const apiKey = k_head + k_tail; 
 
     let state = {

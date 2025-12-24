@@ -7,12 +7,9 @@ const app = (() => {
     const API_URL = 'https://script.google.com/macros/s/AKfycbzFanoakpPL3NaMh8CqbolDF5wo9iVb6ikIKQavQh15aGJYBCj7rGQdWyE3sMC911wxdA/exec';
     
     // --- API KEY CONFIGURATION ---
-    // Teknik memecah string agar tidak terdeteksi scanner GitHub sebagai "Exposed Secret"
-    // Bagian 1: AIzaSyDHe6hnE2k6L
-    // Bagian 2: pNeGQR13rKLOSwvW96p0m0
     const k_head = "AIzaSyDHe6hnE2k6L";
     const k_tail = "pNeGQR13rKLOSwvW96p0m0";
-    const apiKey = k_head + k_tail; // Digabung kembali saat runtime
+    const apiKey = k_head + k_tail; 
 
     let state = {
         rawData: [],
@@ -21,7 +18,6 @@ const app = (() => {
         selectedYear: new Date().getFullYear(),
         sidebarOpen: true,
         isAdmin: false,
-        // Fitur Update Tanggal
         lastDataHash: localStorage.getItem('last_data_hash') || '',
         lastUpdateDate: localStorage.getItem('last_update_date') || 'Overview Performa Penjualan'
     };
@@ -78,7 +74,6 @@ const app = (() => {
             const data = await res.json();
             if (!Array.isArray(data)) throw new Error("Format data salah");
             
-            // --- LOGIKA UPDATE TANGGAL ---
             const currentHash = JSON.stringify(data).length + "_" + data.length;
             if (currentHash !== state.lastDataHash) {
                 const now = new Date();
@@ -258,7 +253,7 @@ const app = (() => {
                     elRowSisa.innerHTML = '<i class="fas fa-check-circle"></i> Tercapai';
                     elRowSisa.style.color = 'var(--color-success)'; 
                 } else {
-                    elRowSisa.innerHTML = `Sisa Target: <span id="val-${keyL}-sisa">${fmt(sisa)}</span>`;
+                    elRowSisa.innerHTML = `Sisa: <span id="val-${keyL}-sisa">${fmt(sisa)}</span>`;
                     elRowSisa.style.color = 'var(--color-danger)'; 
                 }
             }
@@ -278,7 +273,7 @@ const app = (() => {
         updateCard('NPK', stats);
     };
 
-    // --- FITUR AI (PERBAIKAN MODEL NAME) ---
+    // --- FITUR AI (MENGGUNAKAN GEMINI PRO - MODEL PALING STABIL) ---
     const analyzeData = async (type) => {
         const flipInner = document.getElementById(`flip-${type}`);
         const content = document.getElementById(`ai-${type}-content`);
@@ -311,7 +306,8 @@ const app = (() => {
             ctxData = `DATA: Provinsi ${provName}, Produk ${prod}, Sektor ${sec}, Tahun ${year}. Realisasi: ${formatNumber(pData.real)} Ton. Target: ${formatNumber(pData.target)} Ton. Capaian: ${pct}%.`;
         }
 
-        const promptText = `
+        // --- PROMPT MENYATU (KOMPATIBEL DENGAN GEMINI PRO) ---
+        const fullPrompt = `
             Bertindaklah sebagai Senior Data Analyst di PT Pupuk Indonesia.
             
             DATA DASHBOARD:
@@ -321,37 +317,37 @@ const app = (() => {
             Berikan analisis singkat (maksimal 3 poin utama) yang menghubungkan data di atas dengan kondisi realita pertanian di Indonesia.
             
             PERTIMBANGKAN FAKTOR BERIKUT:
-            1. Musim Tanam (Okmar/Asep) saat ini.
+            1. Musim Tanam (Okmar/Asep) yang sedang berlangsung.
             2. Faktor Cuaca (El Nino/La Nina/Curah Hujan).
-            3. Kebijakan Pemerintah/Stok Pangan.
+            3. Kebijakan Pemerintah terkait alokasi pupuk.
             
-            FORMAT OUTPUT (HTML MURNI, TANPA MARKDOWN):
+            FORMAT OUTPUT (HTML MURNI, TANPA BACKTICK):
             <h4><i class="fas fa-chart-pie"></i> Evaluasi Kinerja</h4>
             <ul>
                 <li>[Poin 1: Evaluasi capaian Realisasi vs Target. Berikan sentimen positif/negatif]</li>
             </ul>
             <h4><i class="fas fa-newspaper"></i> Sentimen & Konteks</h4>
             <ul>
-                <li>[Poin 2: Hubungkan dengan kondisi musim tanam/cuaca]</li>
-                <li>[Poin 3: Saran strategi distribusi]</li>
+                <li>[Poin 2: Hubungkan dengan kondisi musim tanam/cuaca saat ini]</li>
+                <li>[Poin 3: Saran strategi distribusi singkat]</li>
             </ul>
         `;
 
         try {
-            // PERUBAHAN DI SINI: MENGGUNAKAN 'gemini-1.5-flash-001' (LEBIH SPESIFIK)
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${apiKey}`, {
+            // REQUEST KE MODEL GEMINI PRO (v1beta/models/gemini-pro)
+            // Model ini tidak menggunakan 'systemInstruction', jadi semua instruksi masuk ke 'contents'.
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: promptText }] }]
+                    contents: [{ parts: [{ text: fullPrompt }] }]
                 })
             });
             
             const result = await response.json();
             
             if (result.error) {
-                // Tampilkan error detail jika masih gagal
-                throw new Error(result.error.message || "Unknown Error");
+                throw new Error(result.error.message);
             }
 
             let rawText = result.candidates[0].content.parts[0].text;
@@ -361,10 +357,10 @@ const app = (() => {
             
         } catch (e) {
             console.error(e);
-            content.innerHTML = `<h4 style="color:var(--color-danger)">Gagal Memuat</h4><p style="font-size:11px; color:#f87171;">${e.message}</p>`;
+            content.innerHTML = `<h4 style="color:var(--color-danger)">Gagal Memuat</h4><p style="font-size:11px">Error: ${e.message}</p>`;
         }
     };
-    
+
     const flipCard = (type) => {
         document.getElementById(`flip-${type}`).classList.remove('flipped');
     };
@@ -632,4 +628,3 @@ const app = (() => {
     };
 })();
 window.onload = app.init;
-

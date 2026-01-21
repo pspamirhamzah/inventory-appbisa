@@ -254,7 +254,7 @@ const app = (() => {
                     elRowSisa.innerHTML = '<i class="fas fa-check-circle"></i> Tercapai';
                     elRowSisa.style.color = 'var(--color-success)'; 
                 } else {
-                    elRowSisa.innerHTML = `Sisa Target: <span id="val-${keyL}-sisa">${fmt(sisa)}</span>`;
+                    elRowSisa.innerHTML = `Sisa Alokasi: <span id="val-${keyL}-sisa">${fmt(sisa)}</span>`;
                     elRowSisa.style.color = 'var(--color-danger)'; 
                 }
             }
@@ -294,7 +294,7 @@ const app = (() => {
             const totalReal = d.real.reduce((a,b)=>a+b,0);
             const totalTarget = d.target.reduce((a,b)=>a+b,0);
             const pct = totalTarget > 0 ? (totalReal/totalTarget*100).toFixed(1) : 0;
-            ctxData = `DATA: Nasional, Produk ${prod}, Sektor ${sec}, Tahun ${year}. Realisasi: ${formatNumber(totalReal)} Ton. Target: ${formatNumber(totalTarget)} Ton. Capaian: ${pct}%.`;
+            ctxData = `DATA: Nasional, Produk ${prod}, Sektor ${sec}, Tahun ${year}. Realisasi: ${formatNumber(totalReal)} Ton. Alokasi: ${formatNumber(totalTarget)} Ton. Capaian: ${pct}%.`;
         } else {
             const provName = document.getElementById('dropdown-provinsi').value;
             if(!statsGlobal.provinsi[provName]) {
@@ -303,7 +303,7 @@ const app = (() => {
             }
             const pData = statsGlobal.provinsi[provName];
             const pct = pData.target > 0 ? (pData.real/pData.target*100).toFixed(1) : 0;
-            ctxData = `DATA: Provinsi ${provName}, Produk ${prod}, Sektor ${sec}, Tahun ${year}. Realisasi: ${formatNumber(pData.real)} Ton. Target: ${formatNumber(pData.target)} Ton. Capaian: ${pct}%.`;
+            ctxData = `DATA: Provinsi ${provName}, Produk ${prod}, Sektor ${sec}, Tahun ${year}. Realisasi: ${formatNumber(pData.real)} Ton. Alokasi: ${formatNumber(pData.target)} Ton. Capaian: ${pct}%.`;
         }
 
         // 3. Prompt (Diubah agar SINGKAT & PADAT)
@@ -393,7 +393,7 @@ const app = (() => {
                         pointStyle: 'circle', order: 1
                     },
                     {
-                        label: 'Target', data: data.target, borderColor: '#666', borderDash: [6, 6],
+                        label: 'Alokasi', data: data.target, borderColor: '#666', borderDash: [6, 6],
                         borderWidth: 2, fill: false, tension: 0.4, 
                         pointRadius: 0, pointStyle: targetIcon, order: 2 
                     },
@@ -476,7 +476,7 @@ const app = (() => {
                         order: 1
                     },
                     {
-                        label: 'Target', data: mTarget, borderColor: '#666', borderDash: [6, 6], 
+                        label: 'Alokasi', data: mTarget, borderColor: '#666', borderDash: [6, 6], 
                         borderWidth: 2, fill: false, tension: 0.4, 
                         pointRadius: 0, pointStyle: targetIcon, order: 2
                     },
